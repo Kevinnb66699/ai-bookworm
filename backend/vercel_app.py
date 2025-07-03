@@ -35,10 +35,13 @@ try:
         # 检查Vercel部署URL模式
         if origin.startswith('https://') and origin.endswith('.vercel.app'):
             domain = origin[8:-11]  # 去掉 'https://' 和 '.vercel.app'
-            # 检查是否匹配前端项目名称模式
+            # 检查是否匹配前端项目名称模式（支持 frontend 和 frontend2）
             if (domain.startswith('ai-bookworm-frontend') or 
+                domain.startswith('ai-bookworm-frontend2') or
                 domain.startswith('ai-bookworm-frontend-git-') or
-                domain.startswith('ai-bookworm-frontend-')):
+                domain.startswith('ai-bookworm-frontend2-git-') or
+                domain.startswith('ai-bookworm-frontend-') or
+                domain.startswith('ai-bookworm-frontend2-')):
                 return True
         
         return False
@@ -115,10 +118,13 @@ except Exception as e:
         # 检查Vercel部署URL模式
         if origin.startswith('https://') and origin.endswith('.vercel.app'):
             domain = origin[8:-11]  # 去掉 'https://' 和 '.vercel.app'
-            # 检查是否匹配前端项目名称模式
+            # 检查是否匹配前端项目名称模式（支持 frontend 和 frontend2）
             if (domain.startswith('ai-bookworm-frontend') or 
+                domain.startswith('ai-bookworm-frontend2') or
                 domain.startswith('ai-bookworm-frontend-git-') or
-                domain.startswith('ai-bookworm-frontend-')):
+                domain.startswith('ai-bookworm-frontend2-git-') or
+                domain.startswith('ai-bookworm-frontend-') or
+                domain.startswith('ai-bookworm-frontend2-')):
                 return True
         
         return False

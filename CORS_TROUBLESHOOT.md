@@ -12,14 +12,20 @@
 Vercel的部署URL格式可能有以下几种：
 
 **前端部署URL格式：**
-- `https://ai-bookworm-frontend.vercel.app`
-- `https://ai-bookworm-frontend-<random-hash>.vercel.app`
-- `https://ai-bookworm-frontend-git-<branch-name>-<username>.vercel.app`
+- `https://ai-bookworm-frontend2.vercel.app`
+- `https://ai-bookworm-frontend2-<random-hash>-<username>.vercel.app`
+- `https://ai-bookworm-frontend2-git-<branch-name>-<username>.vercel.app`
 
 **后端部署URL格式：**
 - `https://ai-bookworm-backend.vercel.app`
-- `https://ai-bookworm-backend-<random-hash>.vercel.app`
+- `https://ai-bookworm-backend-<random-hash>-<username>.vercel.app`
 - `https://ai-bookworm-backend-git-<branch-name>-<username>.vercel.app`
+
+**实际部署URL示例：**
+- 前端：`https://ai-bookworm-frontend2.vercel.app`
+- 前端预览：`https://ai-bookworm-frontend2-moprtvmj7-kevins-projects-61947932.vercel.app`
+- 后端：`https://ai-bookworm-backend.vercel.app`
+- 后端预览：`https://ai-bookworm-backend-faf6bt85k-kevins-projects-61947932.vercel.app`
 
 ### 3. 查找实际部署URL
 
@@ -96,8 +102,11 @@ ALLOWED_ORIGINS=https://你的实际前端URL
 
 我们的新配置支持动态匹配，自动允许以下格式的前端URL：
 - `https://ai-bookworm-frontend*.vercel.app`
+- `https://ai-bookworm-frontend2*.vercel.app`
 - `https://ai-bookworm-frontend-git-*.vercel.app`
-- `https://ai-bookworm-frontend-*.vercel.app`
+- `https://ai-bookworm-frontend2-git-*.vercel.app`
+
+**重要提醒**：根据您的实际部署信息，前端项目名称为 `ai-bookworm-frontend2`，CORS配置已自动适配。
 
 这意味着大多数情况下，你不需要手动更新CORS配置。
 

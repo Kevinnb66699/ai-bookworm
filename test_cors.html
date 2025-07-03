@@ -73,6 +73,17 @@
             addResult(`当前页面协议: <strong>${window.location.protocol}</strong>`, true);
             addResult(`API后端地址: <strong>${API_URL}</strong>`, true);
             addResult(`<hr>`, true);
+            
+            // 检查是否从正确的前端域名访问
+            if (window.location.hostname.includes('ai-bookworm-frontend2')) {
+                addResult(`✅ 检测到正确的前端项目名称 (frontend2)`, true);
+            } else if (window.location.hostname.includes('ai-bookworm-frontend')) {
+                addResult(`⚠️ 检测到旧的前端项目名称 (frontend)`, false);
+            } else if (window.location.hostname === 'localhost') {
+                addResult(`🔧 本地开发环境`, true);
+            } else {
+                addResult(`❓ 未知的域名格式`, false);
+            }
         }
 
         async function testHealthCheck() {
