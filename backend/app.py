@@ -1,69 +1,36 @@
 import os
-import requests
-import zipfile
-from app import create_app, db
+import sys
 import logging
 from dotenv import load_dotenv
 
 # 自动加载.env文件
 load_dotenv()
 
-# 自动下载 vosk 语音识别模型
-MODEL_DIR = "/app/models/vosk-model-en-us-0.42-gigaspeech"
-MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-en-us-0.42-gigaspeech.zip"
-ZIP_PATH = "/app/models/vosk-model-en-us-0.42-gigaspeech.zip"
+# 添加当前目录到 Python 路径
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-def download_model():
-    if not os.path.exists(MODEL_DIR):
-        print("模型不存在，正在下载...")
-        os.makedirs("/app/models", exist_ok=True)
-        with requests.get(MODEL_URL, stream=True) as r:
-            r.raise_for_status()
-            with open(ZIP_PATH, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
-        # 解压
-        with zipfile.ZipFile(ZIP_PATH, "r") as zip_ref:
-            zip_ref.extractall("/app/models")
-        os.remove(ZIP_PATH)
-        print("模型下载并解压完成！")
-    else:
-        print("模型已存在，无需下载。")
+# 导入应用工厂函数
+from app import create_app, db
 
 # 配置日志
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-#download_model()
-
+# 创建应用实例
 app = create_app()
 
 # Vercel 需要这个导出
 app.debug = False
 
-if __name__ == '__main__':
+# 初始化数据库表（仅在首次运行时）
+try:
     with app.app_context():
-        try:
-            # 确保所有表存在
-            logger.info("正在创建数据库表...")
-            db.create_all()
-            logger.info("数据库表创建成功！")
-            
-            # 检查连接
-            logger.info("正在检查数据库连接...")
-            db.session.execute("SELECT 1")
-            logger.info("数据库连接正常！")
-            
-        except Exception as e:
-            logger.error(f"数据库初始化错误: {str(e)}")
-            db.session.rollback()
-    
-    # 检查API Key
-    if not os.environ.get('DASHSCOPE_API_KEY'):
-        print('警告：未检测到 DASHSCOPE_API_KEY 环境变量，语音识别将无法使用！')
-    
-    # 启用调试模式以显示详细错误信息
-    app.config['DEBUG'] = True
-    logger.info("正在启动 Flask 服务器...")
+        db.create_all()
+        logger.info("数据库表初始化完成")
+except Exception as e:
+    logger.error(f"数据库初始化错误: {str(e)}")
+
+if __name__ == '__main__':
+    # 本地开发时运行
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True) 
