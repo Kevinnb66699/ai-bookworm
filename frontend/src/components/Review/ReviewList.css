@@ -1,0 +1,39 @@
+.review-list {
+  width: 100%;
+}
+
+.review-list .ant-list-item {
+  transition: all 0.3s;
+}
+
+.review-list .ant-list-item:hover {
+  background-color: #f5f5f5;
+}
+
+.review-list .ant-list-item-meta-title {
+  margin-bottom: 8px;
+}
+
+.review-list .ant-list-item-meta-description {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.review-list .ant-tag {
+  margin-right: 0;
+}
+
+.review-list .ant-progress {
+  margin-top: 8px;
+}
+
+.review-list .ant-space {
+  width: 100%;
+}
+
+.review-list .ant-btn {
+  margin-right: 8px;
+}
+
+.review-list .ant-list-item-action {
+  margin-left: 24px;
+} 

@@ -1,0 +1,99 @@
+.layout {
+  min-height: 100vh;
+}
+
+.ant-layout-header {
+  padding: 0 24px;
+  background: #001529;
+}
+
+.ant-layout-content {
+  background: #f0f2f5;
+}
+
+.ant-layout-footer {
+  background: #fff;
+  padding: 24px;
+  text-align: center;
+}
+
+/* 添加一些动画效果 */
+.ant-btn {
+  transition: all 0.3s;
+}
+
+.ant-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 日历样式优化 */
+.ant-picker-calendar {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.ant-picker-calendar-date {
+  transition: all 0.3s;
+}
+
+.ant-picker-calendar-date:hover {
+  background: #f0f7ff;
+}
+
+/* 卡片样式优化 */
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+}
+
+.ant-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* 菜单样式优化 */
+.ant-menu-item {
+  transition: all 0.3s;
+}
+
+.ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 表单样式优化 */
+.ant-form-item {
+  margin-bottom: 24px;
+}
+
+.ant-input-affix-wrapper {
+  transition: all 0.3s;
+}
+
+.ant-input-affix-wrapper:hover {
+  border-color: #40a9ff;
+}
+
+/* 按钮组样式 */
+.button-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .ant-layout-header {
+    padding: 0 12px;
+  }
+  
+  .ant-layout-content {
+    padding: 12px;
+  }
+  
+  .ant-card {
+    margin-bottom: 16px;
+  }
+} 

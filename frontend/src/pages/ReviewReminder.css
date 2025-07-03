@@ -1,0 +1,63 @@
+.review-reminder {
+  padding: 24px;
+}
+
+.review-reminder .ant-card {
+  margin-bottom: 16px;
+}
+
+.review-reminder .ant-statistic {
+  text-align: center;
+}
+
+.review-reminder .ant-statistic-title {
+  font-size: 16px;
+}
+
+.review-reminder .ant-statistic-content {
+  font-size: 24px;
+}
+
+.review-reminder .ant-list-item {
+  padding: 16px 24px;
+}
+
+.review-reminder .ant-list-item-meta {
+  margin-bottom: 0;
+}
+
+.review-reminder .ant-list-item-action {
+  margin-left: 24px;
+}
+
+.review-reminder .ant-progress {
+  margin-bottom: 8px;
+}
+
+.review-reminder .ant-modal-body {
+  padding: 24px;
+}
+
+.review-reminder .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.review-reminder .ant-btn {
+  margin-right: 8px;
+}
+
+.review-reminder .ant-space {
+  width: 100%;
+}
+
+.review-reminder .ant-card-extra {
+  padding: 0;
+}
+
+.review-reminder .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.review-reminder .ant-card-body {
+  padding: 24px;
+} 

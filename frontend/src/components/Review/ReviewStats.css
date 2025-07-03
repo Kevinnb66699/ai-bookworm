@@ -1,0 +1,35 @@
+.review-stats {
+  width: 100%;
+}
+
+.review-stats .ant-card {
+  margin-bottom: 16px;
+}
+
+.review-stats .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.review-stats .ant-card-body {
+  padding: 24px;
+}
+
+.review-stats .ant-progress {
+  margin-bottom: 8px;
+}
+
+.review-stats .ant-typography {
+  margin-bottom: 16px;
+}
+
+.review-stats .recharts-wrapper {
+  margin-top: 16px;
+}
+
+.review-stats .ant-row {
+  margin-bottom: 16px;
+}
+
+.review-stats .ant-col {
+  padding: 0 8px;
+} 
