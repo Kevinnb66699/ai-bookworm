@@ -51,7 +51,7 @@ export const resetProxyConfig = () => {
 // RequestManager配置
 export const REQUEST_MANAGER_CONFIG = {
   enableDebug: true, // 临时开启调试模式来诊断问题
-  cacheDuration: 5000, // 请求缓存时间
-  debounceDuration: 500, // 防抖时间
+  cacheDuration: 10000, // 增加缓存时间到10秒
+  debounceDuration: 1000, // 增加防抖时间到1秒
   maxConcurrentRequests: 5 // 最大并发请求数
 }; 
