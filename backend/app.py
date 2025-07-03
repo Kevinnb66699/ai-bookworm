@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 添加当前目录到 Python 路径
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
 
-# 导入应用工厂函数
+# 导入应用工厂函数 - 从 app 包导入
 from app import create_app, db
 
 # 配置日志
