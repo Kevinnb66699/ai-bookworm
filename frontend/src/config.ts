@@ -20,14 +20,14 @@ export const DEFAULT_LANGUAGE = 'zh-CN';
 export const CORS_PROXY_CONFIG = {
   enabled: true, // 是否启用代理
   servers: [
-    'https://cors-anywhere.herokuapp.com/',
-    'https://api.allorigins.win/get?url=',
-    'https://corsproxy.io/?'
+    'https://corsproxy.io/?', // 优先使用，支持所有HTTP方法
+    'https://cors-anywhere.herokuapp.com/', // 备用，支持所有HTTP方法
+    'https://api.allorigins.win/get?url=' // 最后使用，仅支持GET请求
   ],
   currentIndex: 0, // 当前使用的代理服务器索引
   timeout: 15000, // 代理请求超时时间
   retryCount: 2, // 重试次数
-  debug: false // 是否启用调试模式
+  debug: true // 启用调试模式以便排查问题
 };
 
 // 获取当前代理URL

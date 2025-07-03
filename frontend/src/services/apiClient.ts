@@ -39,7 +39,8 @@ const makeProxyRequest = async (config: any, retryCount = 0): Promise<any> => {
         original: fullUrl,
         proxy: proxyUrl,
         method: config.method,
-        retryCount
+        retryCount,
+        data: config.data
       });
     }
     
@@ -49,6 +50,23 @@ const makeProxyRequest = async (config: any, retryCount = 0): Promise<any> => {
       url: proxyUrl,
       baseURL: undefined // 清除baseURL，因为已经包含在proxyUrl中
     };
+    
+    // 特别处理allorigins.win代理
+    if (getCurrentProxyUrl().includes('allorigins.win')) {
+      // allorigins.win只支持GET请求，对于POST请求需要特殊处理
+      if (config.method && config.method.toUpperCase() !== 'GET') {
+        // 对于POST请求，我们需要直接请求或使用其他代理
+        throw new Error('allorigins.win不支持POST请求');
+      }
+    }
+    
+    // 确保Content-Type头部正确设置
+    if (config.data && typeof config.data === 'object') {
+      proxyConfig.headers = {
+        'Content-Type': 'application/json',
+        ...proxyConfig.headers
+      };
+    }
     
     // 发送请求
     const response = await axios(proxyConfig);
@@ -70,6 +88,15 @@ const makeProxyRequest = async (config: any, retryCount = 0): Promise<any> => {
   } catch (error: any) {
     if (CORS_PROXY_CONFIG.debug) {
       console.log('ApiClient代理请求失败:', error.message);
+    }
+    
+    // 如果是allorigins.win不支持POST的错误，立即切换到下一个代理
+    if (error.message.includes('allorigins.win不支持POST请求')) {
+      const nextProxy = switchToNextProxy();
+      if (CORS_PROXY_CONFIG.debug) {
+        console.log(`切换到支持POST的代理: ${nextProxy}`);
+      }
+      return makeProxyRequest(config, retryCount);
     }
     
     // 如果还有重试次数，切换代理服务器重试
