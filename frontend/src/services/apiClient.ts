@@ -1,18 +1,150 @@
 import axios from 'axios';
-import { corsProxyService } from './corsProxy';
+import { 
+  API_BASE_URL, 
+  CORS_PROXY_CONFIG, 
+  getCurrentProxyUrl, 
+  switchToNextProxy, 
+  resetProxyConfig 
+} from '../config';
+
+const API_URL = process.env.REACT_APP_API_URL || API_BASE_URL;
+
+console.log('ApiClient - API_URL:', API_URL);
+console.log('ApiClient - CORS代理状态:', CORS_PROXY_CONFIG.enabled ? '启用' : '禁用');
+
+// 构建代理URL
+const buildProxyUrl = (targetUrl: string) => {
+  if (!CORS_PROXY_CONFIG.enabled) return targetUrl;
+  
+  const proxyUrl = getCurrentProxyUrl();
+  if (!proxyUrl) return targetUrl;
+  
+  // 处理不同代理服务器的URL格式
+  if (proxyUrl.includes('allorigins.win')) {
+    return `${proxyUrl}${encodeURIComponent(targetUrl)}`;
+  } else {
+    return `${proxyUrl}${targetUrl}`;
+  }
+};
+
+// 代理请求函数
+const makeProxyRequest = async (config: any, retryCount = 0): Promise<any> => {
+  try {
+    // 构建完整的URL
+    const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : `${API_URL}${config.url}`;
+    const proxyUrl = buildProxyUrl(fullUrl);
+    
+    if (CORS_PROXY_CONFIG.debug) {
+      console.log('ApiClient代理请求:', {
+        original: fullUrl,
+        proxy: proxyUrl,
+        method: config.method,
+        retryCount
+      });
+    }
+    
+    // 创建新的请求配置
+    const proxyConfig = {
+      ...config,
+      url: proxyUrl,
+      baseURL: undefined // 清除baseURL，因为已经包含在proxyUrl中
+    };
+    
+    // 发送请求
+    const response = await axios(proxyConfig);
+    
+    // 处理allorigins.win的响应格式
+    if (getCurrentProxyUrl().includes('allorigins.win')) {
+      if (response.data && response.data.contents) {
+        try {
+          const actualData = JSON.parse(response.data.contents);
+          return { ...response, data: actualData };
+        } catch (e) {
+          return { ...response, data: response.data.contents };
+        }
+      }
+    }
+    
+    return response;
+    
+  } catch (error: any) {
+    if (CORS_PROXY_CONFIG.debug) {
+      console.log('ApiClient代理请求失败:', error.message);
+    }
+    
+    // 如果还有重试次数，切换代理服务器重试
+    if (retryCount < CORS_PROXY_CONFIG.retryCount) {
+      const nextProxy = switchToNextProxy();
+      if (CORS_PROXY_CONFIG.debug) {
+        console.log(`ApiClient切换到代理服务器: ${nextProxy}`);
+      }
+      return makeProxyRequest(config, retryCount + 1);
+    }
+    
+    // 所有代理都失败了，尝试直接请求
+    if (CORS_PROXY_CONFIG.enabled) {
+      console.log('ApiClient所有代理都失败，尝试直接请求...');
+      try {
+        const directConfig = {
+          ...config,
+          baseURL: API_URL
+        };
+        return await axios(directConfig);
+      } catch (directError) {
+        console.log('ApiClient直接请求也失败了');
+        throw error; // 抛出原始代理错误
+      }
+    }
+    
+    throw error;
+  }
+};
 
 // 创建API客户端实例
-const baseURL = process.env.REACT_APP_API_URL || 'https://ai-bookworm-backend.vercel.app';
-
 const apiClient = axios.create({
-  baseURL: corsProxyService.processUrl(baseURL),
+  timeout: CORS_PROXY_CONFIG.timeout,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+  withCredentials: false, // 代理时需要关闭withCredentials
 });
 
-export default apiClient;
+// 重写axios的请求方法以支持代理
+const createProxyMethod = (method: string) => {
+  return async (url: string, data?: any, config?: any) => {
+    const requestConfig = {
+      method,
+      url,
+      data,
+      headers: {
+        'Content-Type': 'application/json',
+        ...config?.headers
+      },
+      ...config
+    };
+    
+    // 添加token
+    const token = localStorage.getItem('token');
+    if (token) {
+      requestConfig.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    if (CORS_PROXY_CONFIG.enabled) {
+      return makeProxyRequest(requestConfig);
+    } else {
+      return apiClient.request({ ...requestConfig, baseURL: API_URL });
+    }
+  };
+};
+
+// 创建代理方法
+const proxyApiClient = {
+  get: createProxyMethod('GET'),
+  post: createProxyMethod('POST'),
+  put: createProxyMethod('PUT'),
+  delete: createProxyMethod('DELETE'),
+  patch: createProxyMethod('PATCH')
+};
 
 // 请求拦截器：添加token
 apiClient.interceptors.request.use(
@@ -22,8 +154,10 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // 应用代理配置到请求头
-    config = corsProxyService.processRequestConfig(config);
+    // 设置baseURL
+    if (!config.baseURL && !CORS_PROXY_CONFIG.enabled) {
+      config.baseURL = API_URL;
+    }
     
     return config;
   },
@@ -36,7 +170,20 @@ apiClient.interceptors.request.use(
 // 响应拦截器：处理错误
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    // 如果是CORS错误且未启用代理，自动启用代理重试
+    if ((error.code === 'ERR_NETWORK' || error.name === 'AxiosError') && !CORS_PROXY_CONFIG.enabled) {
+      console.log('ApiClient检测到网络错误，启用代理重试...');
+      CORS_PROXY_CONFIG.enabled = true;
+      resetProxyConfig();
+      
+      try {
+        return await makeProxyRequest(error.config);
+      } catch (proxyError) {
+        console.log('ApiClient代理重试失败，继续处理原始错误');
+      }
+    }
+    
     if (error.response) {
       // 处理401错误（未授权）
       if (error.response.status === 401) {
@@ -66,4 +213,9 @@ apiClient.interceptors.response.use(
       return Promise.reject({ message: '请求配置错误' });
     }
   }
-); 
+);
+
+// 导出代理或普通客户端
+const finalApiClient = CORS_PROXY_CONFIG.enabled ? proxyApiClient : apiClient;
+
+export default finalApiClient; 
