@@ -23,23 +23,25 @@ try:
     # 创建应用实例
     app = create_app()
     
-    # 手动添加 CORS 头部 - 更可靠的方式
+    # 更强力的 CORS 配置
     @app.after_request
     def after_request(response):
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = '*'
+        response.headers['Access-Control-Max-Age'] = '86400'
         return response
     
-    # 处理 OPTIONS 预检请求
+    # 处理所有 OPTIONS 请求
     @app.before_request
     def handle_options():
         from flask import request, make_response
         if request.method == "OPTIONS":
             response = make_response()
-            response.headers.add("Access-Control-Allow-Origin", "*")
-            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-            response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Headers'] = '*'
+            response.headers['Access-Control-Allow-Methods'] = '*'
+            response.headers['Access-Control-Max-Age'] = '86400'
             return response
     
     # 添加健康检查路由
@@ -68,6 +70,26 @@ except Exception as e:
     # 创建一个简单的 Flask 应用作为备用
     from flask import Flask, jsonify
     app = Flask(__name__)
+    
+    # 为备用应用也添加 CORS 配置
+    @app.after_request
+    def after_request(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = '*'
+        response.headers['Access-Control-Max-Age'] = '86400'
+        return response
+    
+    @app.before_request
+    def handle_options():
+        from flask import request, make_response
+        if request.method == "OPTIONS":
+            response = make_response()
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Headers'] = '*'
+            response.headers['Access-Control-Allow-Methods'] = '*'
+            response.headers['Access-Control-Max-Age'] = '86400'
+            return response
     
     @app.route('/')
     def health_check():
