@@ -26,10 +26,14 @@ try:
     # 修复CORS配置 - 支持动态匹配
     def is_allowed_origin(origin):
         if not origin:
-            return False
+            return True  # 允许无Origin的请求（如本地文件）
         
         # 本地开发环境
         if origin in ["http://localhost:3000", "https://localhost:3000"]:
+            return True
+        
+        # 允许本地文件测试（file:// 协议）
+        if origin == "null" or origin == "file://" or origin.startswith("file://"):
             return True
         
         # 检查Vercel部署URL模式
@@ -52,9 +56,13 @@ try:
         origin = request.headers.get('Origin')
         
         if is_allowed_origin(origin):
-            response.headers['Access-Control-Allow-Origin'] = origin
+            # 对于本地文件测试，使用 * 作为允许的Origin
+            if not origin or origin == "null" or origin == "file://" or origin.startswith("file://"):
+                response.headers['Access-Control-Allow-Origin'] = '*'
+            else:
+                response.headers['Access-Control-Allow-Origin'] = origin
         else:
-            response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+            response.headers['Access-Control-Allow-Origin'] = '*'
             
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -70,9 +78,13 @@ try:
             
             response = make_response()
             if is_allowed_origin(origin):
-                response.headers['Access-Control-Allow-Origin'] = origin
+                # 对于本地文件测试，使用 * 作为允许的Origin
+                if not origin or origin == "null" or origin == "file://" or origin.startswith("file://"):
+                    response.headers['Access-Control-Allow-Origin'] = '*'
+                else:
+                    response.headers['Access-Control-Allow-Origin'] = origin
             else:
-                response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+                response.headers['Access-Control-Allow-Origin'] = '*'
                 
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -109,10 +121,14 @@ except Exception as e:
     # 为备用应用也添加 CORS 配置
     def is_allowed_origin_backup(origin):
         if not origin:
-            return False
+            return True  # 允许无Origin的请求（如本地文件）
         
         # 本地开发环境
         if origin in ["http://localhost:3000", "https://localhost:3000"]:
+            return True
+        
+        # 允许本地文件测试（file:// 协议）
+        if origin == "null" or origin == "file://" or origin.startswith("file://"):
             return True
         
         # 检查Vercel部署URL模式
@@ -135,9 +151,13 @@ except Exception as e:
         origin = request.headers.get('Origin')
         
         if is_allowed_origin_backup(origin):
-            response.headers['Access-Control-Allow-Origin'] = origin
+            # 对于本地文件测试，使用 * 作为允许的Origin
+            if not origin or origin == "null" or origin == "file://" or origin.startswith("file://"):
+                response.headers['Access-Control-Allow-Origin'] = '*'
+            else:
+                response.headers['Access-Control-Allow-Origin'] = origin
         else:
-            response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+            response.headers['Access-Control-Allow-Origin'] = '*'
             
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -152,9 +172,13 @@ except Exception as e:
             
             response = make_response()
             if is_allowed_origin_backup(origin):
-                response.headers['Access-Control-Allow-Origin'] = origin
+                # 对于本地文件测试，使用 * 作为允许的Origin
+                if not origin or origin == "null" or origin == "file://" or origin.startswith("file://"):
+                    response.headers['Access-Control-Allow-Origin'] = '*'
+                else:
+                    response.headers['Access-Control-Allow-Origin'] = origin
             else:
-                response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+                response.headers['Access-Control-Allow-Origin'] = '*'
                 
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'

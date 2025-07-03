@@ -45,6 +45,10 @@ def create_app():
         if origin in allowed_origins:
             return True
         
+        # 允许本地文件测试（file:// 协议）
+        if origin == "null" or origin == "file://" or not origin or origin.startswith("file://"):
+            return True
+        
         # 检查Vercel部署URL模式
         if origin.startswith('https://') and origin.endswith('.vercel.app'):
             domain = origin[8:-11]  # 去掉 'https://' 和 '.vercel.app'
@@ -59,9 +63,9 @@ def create_app():
         
         return False
     
-    # 修复CORS配置
+    # 修复CORS配置 - 支持本地文件测试
     CORS(app, 
-         origins=is_allowed_origin,
+         origins=True,  # 允许所有来源，包括本地文件
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
          supports_credentials=False,

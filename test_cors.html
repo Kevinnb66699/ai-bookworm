@@ -75,7 +75,9 @@
             addResult(`<hr>`, true);
             
             // 检查是否从正确的前端域名访问
-            if (window.location.hostname.includes('ai-bookworm-frontend2')) {
+            if (window.location.protocol === 'file:') {
+                addResult(`🧪 本地文件测试环境 - CORS配置已优化支持`, true);
+            } else if (window.location.hostname.includes('ai-bookworm-frontend2')) {
                 addResult(`✅ 检测到正确的前端项目名称 (frontend2)`, true);
             } else if (window.location.hostname.includes('ai-bookworm-frontend')) {
                 addResult(`⚠️ 检测到旧的前端项目名称 (frontend)`, false);
