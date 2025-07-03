@@ -32,15 +32,12 @@ def create_app():
     
     print(f"CORS allowed origins: {allowed_origins}")
     
-    # 临时允许所有来源进行调试
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": "*",
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": False
-        }
-    })
+    # 临时允许所有来源进行调试，并添加更多配置
+    CORS(app, 
+         origins="*",
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
+         supports_credentials=False)
     
     # 初始化扩展
     db.init_app(app)
@@ -50,6 +47,18 @@ def create_app():
     # 导入模型
     from .models import User, Course, Word, Text
     
+    # 添加全局 OPTIONS 处理
+    @app.before_request
+    def handle_preflight():
+        from flask import request
+        if request.method == "OPTIONS":
+            from flask import make_response
+            response = make_response()
+            response.headers.add("Access-Control-Allow-Origin", "*")
+            response.headers.add('Access-Control-Allow-Headers', "*")
+            response.headers.add('Access-Control-Allow-Methods', "*")
+            return response
+
     # 注册蓝图
     from .routes import auth, course, word, review, text_recitation, reminder
     app.register_blueprint(auth.bp)
