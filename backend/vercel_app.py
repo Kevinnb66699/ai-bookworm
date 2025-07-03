@@ -23,13 +23,26 @@ try:
     # 创建应用实例
     app = create_app()
     
-    # 更强力的 CORS 配置
+    # 修复CORS配置
     @app.after_request
     def after_request(response):
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Headers'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = '*'
-        response.headers['Access-Control-Max-Age'] = '86400'
+        from flask import request
+        origin = request.headers.get('Origin')
+        allowed_origins = [
+            "http://localhost:3000",
+            "https://localhost:3000", 
+            "https://ai-bookworm-frontend.vercel.app",
+            "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app"
+        ]
+        
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        else:
+            response.headers['Access-Control-Allow-Origin'] = allowed_origins[0]
+            
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Max-Age'] = '3600'
         return response
     
     # 处理所有 OPTIONS 请求
@@ -37,11 +50,23 @@ try:
     def handle_options():
         from flask import request, make_response
         if request.method == "OPTIONS":
+            origin = request.headers.get('Origin')
+            allowed_origins = [
+                "http://localhost:3000",
+                "https://localhost:3000",
+                "https://ai-bookworm-frontend.vercel.app", 
+                "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app"
+            ]
+            
             response = make_response()
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            response.headers['Access-Control-Allow-Headers'] = '*'
-            response.headers['Access-Control-Allow-Methods'] = '*'
-            response.headers['Access-Control-Max-Age'] = '86400'
+            if origin in allowed_origins:
+                response.headers['Access-Control-Allow-Origin'] = origin
+            else:
+                response.headers['Access-Control-Allow-Origin'] = allowed_origins[0]
+                
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Max-Age'] = '3600'
             return response
     
     # 添加健康检查路由
@@ -74,21 +99,46 @@ except Exception as e:
     # 为备用应用也添加 CORS 配置
     @app.after_request
     def after_request(response):
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Headers'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = '*'
-        response.headers['Access-Control-Max-Age'] = '86400'
+        from flask import request
+        origin = request.headers.get('Origin')
+        allowed_origins = [
+            "http://localhost:3000",
+            "https://localhost:3000", 
+            "https://ai-bookworm-frontend.vercel.app",
+            "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app"
+        ]
+        
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        else:
+            response.headers['Access-Control-Allow-Origin'] = allowed_origins[0]
+            
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Max-Age'] = '3600'
         return response
     
     @app.before_request
     def handle_options():
         from flask import request, make_response
         if request.method == "OPTIONS":
+            origin = request.headers.get('Origin')
+            allowed_origins = [
+                "http://localhost:3000",
+                "https://localhost:3000",
+                "https://ai-bookworm-frontend.vercel.app", 
+                "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app"
+            ]
+            
             response = make_response()
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            response.headers['Access-Control-Allow-Headers'] = '*'
-            response.headers['Access-Control-Allow-Methods'] = '*'
-            response.headers['Access-Control-Max-Age'] = '86400'
+            if origin in allowed_origins:
+                response.headers['Access-Control-Allow-Origin'] = origin
+            else:
+                response.headers['Access-Control-Allow-Origin'] = allowed_origins[0]
+                
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Max-Age'] = '3600'
             return response
     
     @app.route('/')

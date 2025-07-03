@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { User, Course, Word, CourseStats, Review, Practice } from '../types';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'https://ai-bookworm-backend.vercel.app';
+
+console.log('API_URL 环境变量:', process.env.REACT_APP_API_URL);
+console.log('实际使用的 API_URL:', API_URL);
 
 const api = axios.create({
     baseURL: API_URL,

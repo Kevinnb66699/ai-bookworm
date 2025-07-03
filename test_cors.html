@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>CORS配置测试</h1>
+    
+    <div>
+        <h2>测试后端API连接</h2>
+        <button onclick="testHealthCheck()">测试健康检查</button>
+        <button onclick="testApiConnection()">测试API连接</button>
+        <button onclick="testCorsHeaders()">测试CORS头部</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://ai-bookworm-backend.vercel.app';
+        const results = document.getElementById('results');
+
+        function addResult(message, isSuccess = true) {
+            const div = document.createElement('div');
+            div.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            results.innerHTML = '';
+        }
+
+        async function testHealthCheck() {
+            clearResults();
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                addResult(`健康检查成功: ${JSON.stringify(data)}`, true);
+            } catch (error) {
+                addResult(`健康检查失败: ${error.message}`, false);
+            }
+        }
+
+        async function testApiConnection() {
+            clearResults();
+            try {
+                const response = await fetch(`${API_URL}/api/courses`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`API连接成功: ${JSON.stringify(data)}`, true);
+                } else {
+                    addResult(`API连接失败: ${response.status} - ${response.statusText}`, false);
+                }
+            } catch (error) {
+                addResult(`API连接失败: ${error.message}`, false);
+            }
+        }
+
+        async function testCorsHeaders() {
+            clearResults();
+            try {
+                const response = await fetch(`${API_URL}/health`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type, Authorization'
+                    }
+                });
+                
+                addResult(`CORS预检请求成功: ${response.status}`, true);
+                
+                // 检查响应头
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                    'Access-Control-Max-Age': response.headers.get('Access-Control-Max-Age')
+                };
+                
+                addResult(`CORS头部: ${JSON.stringify(corsHeaders, null, 2)}`, true);
+                
+            } catch (error) {
+                addResult(`CORS预检测试失败: ${error.message}`, false);
+            }
+        }
+    </script>
+</body>
+</html> 

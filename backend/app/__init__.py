@@ -32,12 +32,13 @@ def create_app():
     
     print(f"CORS allowed origins: {allowed_origins}")
     
-    # 临时允许所有来源进行调试，并添加更多配置
+    # 修复CORS配置
     CORS(app, 
-         origins="*",
+         origins=allowed_origins,
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-         allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
-         supports_credentials=False)
+         allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+         supports_credentials=False,
+         max_age=3600)
     
     # 初始化扩展
     db.init_app(app)
