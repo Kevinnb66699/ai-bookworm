@@ -52,18 +52,8 @@ try:
     
     @app.after_request
     def after_request(response):
-        from flask import request
-        origin = request.headers.get('Origin')
-        
-        if is_allowed_origin(origin):
-            # 对于本地文件测试，使用 * 作为允许的Origin
-            if not origin or origin == "null" or origin == "file://" or origin.startswith("file://"):
-                response.headers['Access-Control-Allow-Origin'] = '*'
-            else:
-                response.headers['Access-Control-Allow-Origin'] = origin
-        else:
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            
+        # 强制设置CORS头部，不管什么情况
+        response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         response.headers['Access-Control-Max-Age'] = '3600'
@@ -74,18 +64,8 @@ try:
     def handle_options():
         from flask import request, make_response
         if request.method == "OPTIONS":
-            origin = request.headers.get('Origin')
-            
             response = make_response()
-            if is_allowed_origin(origin):
-                # 对于本地文件测试，使用 * 作为允许的Origin
-                if not origin or origin == "null" or origin == "file://" or origin.startswith("file://"):
-                    response.headers['Access-Control-Allow-Origin'] = '*'
-                else:
-                    response.headers['Access-Control-Allow-Origin'] = origin
-            else:
-                response.headers['Access-Control-Allow-Origin'] = '*'
-                
+            response.headers['Access-Control-Allow-Origin'] = '*'
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
             response.headers['Access-Control-Max-Age'] = '3600'
@@ -147,18 +127,8 @@ except Exception as e:
     
     @app.after_request
     def after_request(response):
-        from flask import request
-        origin = request.headers.get('Origin')
-        
-        if is_allowed_origin_backup(origin):
-            # 对于本地文件测试，使用 * 作为允许的Origin
-            if not origin or origin == "null" or origin == "file://" or origin.startswith("file://"):
-                response.headers['Access-Control-Allow-Origin'] = '*'
-            else:
-                response.headers['Access-Control-Allow-Origin'] = origin
-        else:
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            
+        # 强制设置CORS头部
+        response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         response.headers['Access-Control-Max-Age'] = '3600'
@@ -168,18 +138,8 @@ except Exception as e:
     def handle_options():
         from flask import request, make_response
         if request.method == "OPTIONS":
-            origin = request.headers.get('Origin')
-            
             response = make_response()
-            if is_allowed_origin_backup(origin):
-                # 对于本地文件测试，使用 * 作为允许的Origin
-                if not origin or origin == "null" or origin == "file://" or origin.startswith("file://"):
-                    response.headers['Access-Control-Allow-Origin'] = '*'
-                else:
-                    response.headers['Access-Control-Allow-Origin'] = origin
-            else:
-                response.headers['Access-Control-Allow-Origin'] = '*'
-                
+            response.headers['Access-Control-Allow-Origin'] = '*'
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
             response.headers['Access-Control-Max-Age'] = '3600'

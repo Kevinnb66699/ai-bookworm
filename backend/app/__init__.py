@@ -79,6 +79,15 @@ def create_app():
     # 导入模型
     from .models import User, Course, Word, Text
     
+    # 强制CORS配置 - 确保100%有效
+    @app.after_request
+    def force_cors_headers(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Max-Age'] = '3600'
+        return response
+
     # 添加全局 OPTIONS 处理
     @app.before_request
     def handle_preflight():
@@ -86,9 +95,10 @@ def create_app():
         if request.method == "OPTIONS":
             from flask import make_response
             response = make_response()
-            response.headers.add("Access-Control-Allow-Origin", "*")
-            response.headers.add('Access-Control-Allow-Headers', "*")
-            response.headers.add('Access-Control-Allow-Methods', "*")
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Max-Age'] = '3600'
             return response
 
     # 注册蓝图
