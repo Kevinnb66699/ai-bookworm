@@ -49,7 +49,7 @@ const CourseDetail: React.FC = () => {
       fetchCourse();
       fetchWords();
     }
-  }, [id, navigate]);
+  }, [id]);
 
   const handleWordChange = () => {
     fetchWords();
