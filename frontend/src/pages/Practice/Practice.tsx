@@ -23,8 +23,8 @@ const Practice: React.FC = () => {
 
     const loadNextWord = async () => {
         try {
-            const response = await words.getPracticeWords(Number(courseId));
-            if (response.data.length > 0) {
+            const response = await words.practice(Number(courseId!), 'word');
+            if (response.data && response.data.length > 0) {
                 setCurrentWord(response.data[0]);
                 setAnswer('');
                 setShowResult(false);
@@ -43,7 +43,11 @@ const Practice: React.FC = () => {
         if (!currentWord) return;
 
         try {
-            const response = await words.checkPractice(currentWord.id, answer);
+            const response = await words.submitPractice({
+                word_id: currentWord.id,
+                answer: answer,
+                course_id: Number(courseId!)
+            });
             setShowResult(true);
             setTotalQuestions(prev => prev + 1);
             if (response.data.is_correct) {

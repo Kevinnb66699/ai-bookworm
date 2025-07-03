@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Word } from '../../types';
-import { words } from '../../services/api';
+import { Word } from '../../services/wordService';
+import { words, reviews } from '../../services/api';
 import './Review.css';
 
 const Review: React.FC = () => {
@@ -18,9 +18,10 @@ const Review: React.FC = () => {
 
     const loadNextWord = async () => {
         try {
-            const response = await words.getReviewWords(Number(courseId));
-            if (response.data.length > 0) {
-                setCurrentWord(response.data[0]);
+            const response = await words.getAll(Number(courseId!));
+            if (response.data && response.data.length > 0) {
+                // 简单选择第一个单词作为复习单词
+                setCurrentWord(response.data[Math.floor(Math.random() * response.data.length)]);
                 setShowMeaning(false);
             } else {
                 setCompleted(true);
@@ -40,7 +41,10 @@ const Review: React.FC = () => {
         if (!currentWord) return;
 
         try {
-            await words.submitReview(currentWord.id, quality);
+            await reviews.create({
+                word_id: currentWord.id,
+                quality: quality
+            });
             setReviewCount(prev => prev + 1);
             loadNextWord();
         } catch (error) {
@@ -79,7 +83,11 @@ const Review: React.FC = () => {
                     <p className="pronunciation">{currentWord?.pronunciation}</p>
                     {showMeaning && (
                         <div className="meaning">
-                            <p className="definition">{currentWord?.meaning}</p>
+                            <div className="definition">
+                                {currentWord?.meanings?.map((meaning, index) => (
+                                    <p key={index}>{meaning}</p>
+                                ))}
+                            </div>
                             <p className="example">{currentWord?.example}</p>
                         </div>
                     )}
