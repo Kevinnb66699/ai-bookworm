@@ -1,0 +1,101 @@
+# 依赖文件
+node_modules/
+*/node_modules/
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 构建输出
+build/
+dist/
+*/build/
+*/dist/
+
+# 日志文件
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Python 相关
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+
+# Flask 相关
+instance/
+.webassets-cache
+
+# 数据库
+*.db
+*.sqlite
+*.sqlite3
+
+# Vercel
+.vercel
+
+# 临时文件
+*.tmp
+*.temp
+
+# 测试覆盖率
+coverage/
+.nyc_output
+
+# 缓存
+.cache/
+.parcel-cache/
+
+# 本地配置
+local_settings.py
+
+# 上传的文件
+uploads/
+static/uploads/
+
+# 模型文件
+models/
+*.model
+
+# 证书文件
+*.pem
+*.key
+*.crt
+
+# 备份文件
+*.backup
+*.bak

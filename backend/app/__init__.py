@@ -19,15 +19,26 @@ def create_app():
     print(f"Connecting to database: {app.config['SQLALCHEMY_DATABASE_URI']}")
     
     # 配置CORS
+    allowed_origins = [
+        "http://localhost:3000",
+        "https://localhost:3000",
+        "https://*.vercel.app",
+        "https://*.vercel.com"
+    ]
+    
+    # 从环境变量获取允许的域名
+    if os.environ.get('ALLOWED_ORIGINS'):
+        allowed_origins.extend(os.environ.get('ALLOWED_ORIGINS').split(','))
+    
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:3000"],
+            "origins": allowed_origins,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True
         },
         r"/api/text-recitation/*": {
-            "origins": ["http://localhost:3000"],
+            "origins": allowed_origins,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True

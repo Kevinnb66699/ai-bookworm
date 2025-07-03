@@ -38,6 +38,9 @@ logger = logging.getLogger(__name__)
 
 app = create_app()
 
+# Vercel 需要这个导出
+app.debug = False
+
 if __name__ == '__main__':
     with app.app_context():
         try:
