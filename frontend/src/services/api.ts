@@ -305,5 +305,24 @@ export const speech = {
     }
 };
 
+// 导入导出相关API
+export const importExport = {
+    importWords: (courseId: number, file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post(`/api/courses/${courseId}/import`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
+    
+    exportWords: (courseId: number) => 
+        api.get(`/api/courses/${courseId}/export`, { responseType: 'blob' }),
+    
+    getWordTemplate: () => 
+        api.get('/api/words/template', { responseType: 'blob' })
+};
+
 // 默认导出
 export default api; 
