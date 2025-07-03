@@ -27,16 +27,19 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
-    # 生成邮箱验证令牌
-    verification_token = create_access_token(
-        identity=new_user.id,
-        additional_claims={'type': 'email_verification'},
-        expires_delta=timedelta(hours=24)
-    )
+    # 生成访问令牌
+    access_token = create_access_token(identity=str(new_user.id))
     
     # TODO: 发送验证邮件
     
-    return jsonify({'message': 'User registered successfully'}), 201
+    return jsonify({
+        'token': access_token,
+        'user': {
+            'id': new_user.id,
+            'username': new_user.username,
+            'email': new_user.email
+        }
+    }), 201
 
 @bp.route('/api/auth/login', methods=['POST'])
 def login():
