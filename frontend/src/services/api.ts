@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { User, Course, Word, CourseStats, Review, Practice } from '../types';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -39,22 +39,22 @@ api.interceptors.response.use(
 // 认证相关API
 export const auth = {
     login: (email: string, password: string) =>
-        api.post<{ token: string; user: User }>('/auth/login', { email, password }),
+        api.post<{ token: string; user: User }>('/api/auth/login', { email, password }),
     
     register: (email: string, password: string, username: string) =>
-        api.post<{ token: string; user: User }>('/auth/register', { email, password, username }),
+        api.post<{ token: string; user: User }>('/api/auth/register', { email, password, username }),
     
     verifyToken: () =>
-        api.get<User>('/auth/verify'),
+        api.get<User>('/api/auth/verify'),
     
     logout: () =>
-        api.post('/auth/logout'),
+        api.post('/api/auth/logout'),
     
     updateProfile: (data: Partial<User>) =>
-        api.put<User>('/auth/profile', data),
+        api.put<User>('/api/auth/profile', data),
     
     changePassword: (oldPassword: string, newPassword: string) =>
-        api.put('/auth/password', { oldPassword, newPassword })
+        api.put('/api/auth/password', { oldPassword, newPassword })
 };
 
 // 课程相关API
