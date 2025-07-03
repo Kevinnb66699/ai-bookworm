@@ -10,10 +10,16 @@ const Register: React.FC = () => {
   const onFinish = async (values: { username: string; email: string; password: string }) => {
     setLoading(true);
     try {
-      await auth.register(values.email, values.password, values.username);
+      console.log('发送注册请求:', values);
+      const response = await auth.register(values.email, values.password, values.username);
+      console.log('注册响应:', response);
       message.success('注册成功！正在跳转到登录页面...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (error: any) {
+      console.error('注册错误:', error);
+      console.error('错误响应:', error.response);
+      console.error('错误状态码:', error.response?.status);
+      console.error('错误数据:', error.response?.data);
       message.error(error.response?.data?.error || '注册失败，请重试');
     } finally {
       setLoading(false);

@@ -22,26 +22,23 @@ def create_app():
     allowed_origins = [
         "http://localhost:3000",
         "https://localhost:3000",
-        "https://*.vercel.app",
-        "https://*.vercel.com"
+        "https://ai-bookworm-frontend.vercel.app",
+        "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app"
     ]
     
     # 从环境变量获取允许的域名
     if os.environ.get('ALLOWED_ORIGINS'):
         allowed_origins.extend(os.environ.get('ALLOWED_ORIGINS').split(','))
     
+    print(f"CORS allowed origins: {allowed_origins}")
+    
+    # 临时允许所有来源进行调试
     CORS(app, resources={
         r"/api/*": {
-            "origins": allowed_origins,
+            "origins": "*",
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True
-        },
-        r"/api/text-recitation/*": {
-            "origins": allowed_origins,
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True
+            "supports_credentials": False
         }
     })
     
