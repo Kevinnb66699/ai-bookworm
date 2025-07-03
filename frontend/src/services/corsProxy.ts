@@ -7,11 +7,9 @@ export interface ProxyConfig {
     proxies: string[];
 }
 
-// 可用的CORS代理服务器列表
+// 可用的CORS代理服务器列表 - 强制使用第一个代理
 export const CORS_PROXIES = [
-    'https://cors-anywhere.herokuapp.com/',
-    'https://api.allorigins.win/raw?url=',
-    'https://corsproxy.io/?'
+    'https://cors-anywhere.herokuapp.com/'
 ];
 
 // 代理配置
