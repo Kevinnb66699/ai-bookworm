@@ -25,9 +25,9 @@ export const CORS_PROXY_CONFIG = {
     'https://api.allorigins.win/get?url=' // 最后使用，仅支持GET请求
   ],
   currentIndex: 0, // 当前使用的代理服务器索引
-  timeout: 15000, // 代理请求超时时间
-  retryCount: 2, // 重试次数
-  debug: true // 启用调试模式以便排查问题
+  timeout: 8000, // 减少超时时间，提升响应速度
+  retryCount: 1, // 减少重试次数，避免过长等待
+  debug: false // 关闭调试模式，提升性能
 };
 
 // 获取当前代理URL
