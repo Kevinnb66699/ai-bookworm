@@ -19,9 +19,28 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     # 导入应用工厂函数
     from app import create_app, db
+    from flask_cors import CORS
     
     # 创建应用实例
     app = create_app()
+    
+    # 额外的 CORS 配置确保 Vercel 部署正常工作
+    CORS(app, 
+         origins="*",
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         allow_headers=["Content-Type", "Authorization"],
+         supports_credentials=False)
+    
+    # 添加全局 OPTIONS 处理
+    @app.before_request
+    def handle_preflight():
+        from flask import request, make_response
+        if request.method == "OPTIONS":
+            response = make_response()
+            response.headers.add("Access-Control-Allow-Origin", "*")
+            response.headers.add('Access-Control-Allow-Headers', "*")
+            response.headers.add('Access-Control-Allow-Methods', "*")
+            return response
     
     # 添加健康检查路由
     @app.route('/')
