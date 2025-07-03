@@ -58,7 +58,7 @@
         function addResult(message, isSuccess = true) {
             const div = document.createElement('div');
             div.className = `test-result ${isSuccess ? 'success' : 'error'}`;
-            div.textContent = message;
+            div.innerHTML = message; // 使用innerHTML支持HTML格式
             results.appendChild(div);
         }
 
@@ -66,19 +66,30 @@
             results.innerHTML = '';
         }
 
+        // 显示当前页面的origin信息
+        function showOriginInfo() {
+            addResult(`当前页面Origin: <strong>${window.location.origin}</strong>`, true);
+            addResult(`当前页面域名: <strong>${window.location.hostname}</strong>`, true);
+            addResult(`当前页面协议: <strong>${window.location.protocol}</strong>`, true);
+            addResult(`API后端地址: <strong>${API_URL}</strong>`, true);
+            addResult(`<hr>`, true);
+        }
+
         async function testHealthCheck() {
             clearResults();
+            showOriginInfo();
             try {
                 const response = await fetch(`${API_URL}/health`);
                 const data = await response.json();
-                addResult(`健康检查成功: ${JSON.stringify(data)}`, true);
+                addResult(`✅ 健康检查成功: ${JSON.stringify(data)}`, true);
             } catch (error) {
-                addResult(`健康检查失败: ${error.message}`, false);
+                addResult(`❌ 健康检查失败: ${error.message}`, false);
             }
         }
 
         async function testApiConnection() {
             clearResults();
+            showOriginInfo();
             try {
                 const response = await fetch(`${API_URL}/api/courses`, {
                     method: 'GET',
@@ -89,17 +100,21 @@
                 
                 if (response.ok) {
                     const data = await response.json();
-                    addResult(`API连接成功: ${JSON.stringify(data)}`, true);
+                    addResult(`✅ API连接成功: ${JSON.stringify(data)}`, true);
                 } else {
-                    addResult(`API连接失败: ${response.status} - ${response.statusText}`, false);
+                    addResult(`❌ API连接失败: ${response.status} - ${response.statusText}`, false);
                 }
             } catch (error) {
-                addResult(`API连接失败: ${error.message}`, false);
+                addResult(`❌ API连接失败: ${error.message}`, false);
+                if (error.message.includes('CORS')) {
+                    addResult(`<strong>CORS错误提示:</strong> 请检查后端是否允许当前域名 ${window.location.origin} 的跨域请求`, false);
+                }
             }
         }
 
         async function testCorsHeaders() {
             clearResults();
+            showOriginInfo();
             try {
                 const response = await fetch(`${API_URL}/health`, {
                     method: 'OPTIONS',
@@ -110,7 +125,7 @@
                     }
                 });
                 
-                addResult(`CORS预检请求成功: ${response.status}`, true);
+                addResult(`✅ CORS预检请求成功: ${response.status}`, true);
                 
                 // 检查响应头
                 const corsHeaders = {
@@ -120,12 +135,26 @@
                     'Access-Control-Max-Age': response.headers.get('Access-Control-Max-Age')
                 };
                 
-                addResult(`CORS头部: ${JSON.stringify(corsHeaders, null, 2)}`, true);
+                addResult(`CORS头部信息:<br><pre>${JSON.stringify(corsHeaders, null, 2)}</pre>`, true);
+                
+                // 检查是否正确设置了Origin
+                const allowedOrigin = response.headers.get('Access-Control-Allow-Origin');
+                if (allowedOrigin === window.location.origin) {
+                    addResult(`✅ CORS配置正确：允许的Origin匹配当前域名`, true);
+                } else {
+                    addResult(`⚠️ CORS配置问题：允许的Origin (${allowedOrigin}) 与当前域名 (${window.location.origin}) 不匹配`, false);
+                }
                 
             } catch (error) {
-                addResult(`CORS预检测试失败: ${error.message}`, false);
+                addResult(`❌ CORS预检测试失败: ${error.message}`, false);
             }
         }
+
+        // 页面加载时显示基本信息
+        window.onload = function() {
+            addResult(`<h3>🔍 CORS诊断工具</h3>`, true);
+            addResult(`<p>此工具帮助您诊断CORS跨域问题。请使用以下按钮测试不同的连接情况。</p>`, true);
+        };
     </script>
 </body>
 </html> 

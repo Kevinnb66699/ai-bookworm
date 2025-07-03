@@ -18,12 +18,16 @@ def create_app():
     # 打印数据库连接信息
     print(f"Connecting to database: {app.config['SQLALCHEMY_DATABASE_URI']}")
     
-    # 配置CORS
+    # 配置CORS - 支持多种URL格式
     allowed_origins = [
         "http://localhost:3000",
         "https://localhost:3000",
+        # 各种可能的前端部署URL格式
         "https://ai-bookworm-frontend.vercel.app",
-        "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app"
+        "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app",
+        # 通用格式匹配
+        "https://ai-bookworm-frontend-*.vercel.app",
+        "https://ai-bookworm-frontend-git-*.vercel.app",
     ]
     
     # 从环境变量获取允许的域名
@@ -32,9 +36,29 @@ def create_app():
     
     print(f"CORS allowed origins: {allowed_origins}")
     
+    # 使用通配符匹配所有Vercel部署URL
+    def is_allowed_origin(origin):
+        if not origin:
+            return False
+        
+        # 检查精确匹配
+        if origin in allowed_origins:
+            return True
+        
+        # 检查Vercel部署URL模式
+        if origin.startswith('https://') and origin.endswith('.vercel.app'):
+            domain = origin[8:-11]  # 去掉 'https://' 和 '.vercel.app'
+            # 检查是否匹配前端项目名称模式
+            if (domain.startswith('ai-bookworm-frontend') or 
+                domain.startswith('ai-bookworm-frontend-git-') or
+                domain.startswith('ai-bookworm-frontend-')):
+                return True
+        
+        return False
+    
     # 修复CORS配置
     CORS(app, 
-         origins=allowed_origins,
+         origins=is_allowed_origin,
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
          supports_credentials=False,

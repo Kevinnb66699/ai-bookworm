@@ -23,22 +23,35 @@ try:
     # 创建应用实例
     app = create_app()
     
-    # 修复CORS配置
+    # 修复CORS配置 - 支持动态匹配
+    def is_allowed_origin(origin):
+        if not origin:
+            return False
+        
+        # 本地开发环境
+        if origin in ["http://localhost:3000", "https://localhost:3000"]:
+            return True
+        
+        # 检查Vercel部署URL模式
+        if origin.startswith('https://') and origin.endswith('.vercel.app'):
+            domain = origin[8:-11]  # 去掉 'https://' 和 '.vercel.app'
+            # 检查是否匹配前端项目名称模式
+            if (domain.startswith('ai-bookworm-frontend') or 
+                domain.startswith('ai-bookworm-frontend-git-') or
+                domain.startswith('ai-bookworm-frontend-')):
+                return True
+        
+        return False
+    
     @app.after_request
     def after_request(response):
         from flask import request
         origin = request.headers.get('Origin')
-        allowed_origins = [
-            "http://localhost:3000",
-            "https://localhost:3000", 
-            "https://ai-bookworm-frontend.vercel.app",
-            "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app"
-        ]
         
-        if origin in allowed_origins:
+        if is_allowed_origin(origin):
             response.headers['Access-Control-Allow-Origin'] = origin
         else:
-            response.headers['Access-Control-Allow-Origin'] = allowed_origins[0]
+            response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
             
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -51,18 +64,12 @@ try:
         from flask import request, make_response
         if request.method == "OPTIONS":
             origin = request.headers.get('Origin')
-            allowed_origins = [
-                "http://localhost:3000",
-                "https://localhost:3000",
-                "https://ai-bookworm-frontend.vercel.app", 
-                "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app"
-            ]
             
             response = make_response()
-            if origin in allowed_origins:
+            if is_allowed_origin(origin):
                 response.headers['Access-Control-Allow-Origin'] = origin
             else:
-                response.headers['Access-Control-Allow-Origin'] = allowed_origins[0]
+                response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
                 
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -97,21 +104,34 @@ except Exception as e:
     app = Flask(__name__)
     
     # 为备用应用也添加 CORS 配置
+    def is_allowed_origin_backup(origin):
+        if not origin:
+            return False
+        
+        # 本地开发环境
+        if origin in ["http://localhost:3000", "https://localhost:3000"]:
+            return True
+        
+        # 检查Vercel部署URL模式
+        if origin.startswith('https://') and origin.endswith('.vercel.app'):
+            domain = origin[8:-11]  # 去掉 'https://' 和 '.vercel.app'
+            # 检查是否匹配前端项目名称模式
+            if (domain.startswith('ai-bookworm-frontend') or 
+                domain.startswith('ai-bookworm-frontend-git-') or
+                domain.startswith('ai-bookworm-frontend-')):
+                return True
+        
+        return False
+    
     @app.after_request
     def after_request(response):
         from flask import request
         origin = request.headers.get('Origin')
-        allowed_origins = [
-            "http://localhost:3000",
-            "https://localhost:3000", 
-            "https://ai-bookworm-frontend.vercel.app",
-            "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app"
-        ]
         
-        if origin in allowed_origins:
+        if is_allowed_origin_backup(origin):
             response.headers['Access-Control-Allow-Origin'] = origin
         else:
-            response.headers['Access-Control-Allow-Origin'] = allowed_origins[0]
+            response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
             
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -123,18 +143,12 @@ except Exception as e:
         from flask import request, make_response
         if request.method == "OPTIONS":
             origin = request.headers.get('Origin')
-            allowed_origins = [
-                "http://localhost:3000",
-                "https://localhost:3000",
-                "https://ai-bookworm-frontend.vercel.app", 
-                "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app"
-            ]
             
             response = make_response()
-            if origin in allowed_origins:
+            if is_allowed_origin_backup(origin):
                 response.headers['Access-Control-Allow-Origin'] = origin
             else:
-                response.headers['Access-Control-Allow-Origin'] = allowed_origins[0]
+                response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
                 
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
