@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { List, Card, Button, Popconfirm, message, Modal, Form, Input, Space } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { Word, CreateWordData, createWord, updateWord, deleteWord } from '../../services/wordService';
@@ -10,19 +10,19 @@ interface WordListProps {
   onWordChange: () => void;
 }
 
-const WordList: React.FC<WordListProps> = ({ courseId, words, onWordChange }) => {
+const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange }) => {
   const [loading, setLoading] = useState(false);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setEditingWord(null);
     form.resetFields();
     setIsModalVisible(true);
-  };
+  }, [form]);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = useCallback(async (id: number) => {
     try {
       setLoading(true);
       await deleteWord(id);
@@ -34,9 +34,9 @@ const WordList: React.FC<WordListProps> = ({ courseId, words, onWordChange }) =>
     } finally {
       setLoading(false);
     }
-  };
+  }, [onWordChange]);
 
-  const handleEdit = (word: Word) => {
+  const handleEdit = useCallback((word: Word) => {
     setEditingWord(word);
     form.setFieldsValue({
       word: word.word,
@@ -45,15 +45,15 @@ const WordList: React.FC<WordListProps> = ({ courseId, words, onWordChange }) =>
       example: word.example
     });
     setIsModalVisible(true);
-  };
+  }, [form]);
 
-  const handleModalCancel = () => {
+  const handleModalCancel = useCallback(() => {
     setIsModalVisible(false);
     setEditingWord(null);
     form.resetFields();
-  };
+  }, [form]);
 
-  const handleModalOk = async () => {
+  const handleModalOk = useCallback(async () => {
     try {
       setLoading(true);
       const values = await form.validateFields();
@@ -101,7 +101,7 @@ const WordList: React.FC<WordListProps> = ({ courseId, words, onWordChange }) =>
     } finally {
       setLoading(false);
     }
-  };
+  }, [form, courseId, editingWord, onWordChange]);
 
   return (
     <div>
@@ -211,7 +211,7 @@ const WordList: React.FC<WordListProps> = ({ courseId, words, onWordChange }) =>
         renderItem={(word) => (
           <List.Item
             actions={[
-              <Space>
+              <Space key="actions">
                 <Button type="link" onClick={() => handleEdit(word)}>编辑</Button>
                 <Button type="link" danger onClick={() => handleDelete(word.id)}>删除</Button>
               </Space>
@@ -238,6 +238,8 @@ const WordList: React.FC<WordListProps> = ({ courseId, words, onWordChange }) =>
       />
     </div>
   );
-};
+});
+
+WordList.displayName = 'WordList';
 
 export default WordList; 

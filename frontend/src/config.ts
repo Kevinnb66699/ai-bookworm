@@ -46,4 +46,12 @@ export const switchToNextProxy = () => {
 export const resetProxyConfig = () => {
   CORS_PROXY_CONFIG.currentIndex = 0;
   CORS_PROXY_CONFIG.enabled = true;
+};
+
+// RequestManager配置
+export const REQUEST_MANAGER_CONFIG = {
+  enableDebug: true, // 临时开启调试模式来诊断问题
+  cacheDuration: 5000, // 请求缓存时间
+  debounceDuration: 500, // 防抖时间
+  maxConcurrentRequests: 5 // 最大并发请求数
 }; 

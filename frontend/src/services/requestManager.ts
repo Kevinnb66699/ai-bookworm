@@ -1,16 +1,21 @@
 /**
  * 请求管理器 - 防止重复请求和竞态条件
  */
+import { REQUEST_MANAGER_CONFIG } from '../config';
 
 interface PendingRequest {
   promise: Promise<any>;
   abortController: AbortController;
   timestamp: number;
+  lastCall: number; // 最后一次调用时间
 }
 
 class RequestManager {
   private pendingRequests = new Map<string, PendingRequest>();
-  private readonly CACHE_DURATION = 5000; // 5秒内的相同请求视为重复
+  private readonly CACHE_DURATION = REQUEST_MANAGER_CONFIG.cacheDuration;
+  private readonly DEBOUNCE_DURATION = REQUEST_MANAGER_CONFIG.debounceDuration;
+  private callTimestamps = new Map<string, number[]>(); // 记录每个请求的调用时间戳
+  private componentCallCounts = new Map<string, number>(); // 记录每个组件的调用次数
 
   /**
    * 生成请求的唯一键
@@ -32,6 +37,54 @@ class RequestManager {
         this.pendingRequests.delete(key);
       }
     }
+    
+    // 清理过期的调用时间戳
+    const timestampEntries = Array.from(this.callTimestamps.entries());
+    for (const [key, timestamps] of timestampEntries) {
+      // 只保留最近5秒内的时间戳
+      const recentTimestamps = timestamps.filter(ts => now - ts < 5000);
+      if (recentTimestamps.length === 0) {
+        this.callTimestamps.delete(key);
+      } else {
+        this.callTimestamps.set(key, recentTimestamps);
+      }
+    }
+  }
+
+  /**
+   * 调试日志
+   */
+  private debugLog(message: string, ...args: any[]): void {
+    if (REQUEST_MANAGER_CONFIG.enableDebug) {
+      console.log(`[RequestManager] ${message}`, ...args);
+    }
+  }
+
+  /**
+   * 检查是否是快速重复调用
+   */
+  private isRapidCall(key: string): boolean {
+    const now = Date.now();
+    const timestamps = this.callTimestamps.get(key) || [];
+    
+    // 统计组件调用次数
+    const componentName = key.split(':')[1]?.split('/')[4] || 'unknown';
+    const currentCount = this.componentCallCounts.get(componentName) || 0;
+    this.componentCallCounts.set(componentName, currentCount + 1);
+    
+    // 检查是否在防抖时间内
+    const lastTimestamp = timestamps[timestamps.length - 1];
+    if (lastTimestamp && now - lastTimestamp < this.DEBOUNCE_DURATION) {
+      this.debugLog(`🚫 防抖阻止快速重复调用: ${key} (间隔: ${now - lastTimestamp}ms) [${componentName}第${currentCount}次调用]`);
+      return true;
+    }
+    
+    // 记录当前调用时间
+    timestamps.push(now);
+    this.callTimestamps.set(key, timestamps);
+    
+    this.debugLog(`📊 组件调用统计: ${componentName} 第${currentCount}次调用`);
+    return false;
   }
 
   /**
@@ -48,25 +101,37 @@ class RequestManager {
     // 清理过期请求
     this.cleanupExpiredRequests();
     
+    // 检查是否是快速重复调用
+    if (this.isRapidCall(key)) {
+      // 如果有正在进行的相同请求，复用它
+      const existingRequest = this.pendingRequests.get(key);
+      if (existingRequest) {
+        return existingRequest.promise;
+      }
+      // 如果没有正在进行的请求，抛出错误或返回空值
+      throw new Error(`请求过于频繁，请稍后再试`);
+    }
+    
     // 检查是否有正在进行的相同请求
     const existingRequest = this.pendingRequests.get(key);
     if (existingRequest) {
-      console.log(`🔄 复用正在进行的请求: ${key}`);
+      this.debugLog(`🔄 复用正在进行的请求: ${key}`);
       return existingRequest.promise;
     }
 
     // 创建新的请求
     const abortController = new AbortController();
-    console.log(`🚀 开始新请求: ${key}`);
+    const now = Date.now();
+    this.debugLog(`🚀 开始新请求: ${key} (当前并发: ${this.pendingRequests.size})`);
     
     const promise = requestFn(abortController.signal)
       .then((result) => {
-        console.log(`✅ 请求完成: ${key}`);
+        this.debugLog(`✅ 请求完成: ${key} (剩余并发: ${this.pendingRequests.size - 1})`);
         this.pendingRequests.delete(key);
         return result;
       })
       .catch((error) => {
-        console.log(`❌ 请求失败: ${key}`, error.message);
+        this.debugLog(`❌ 请求失败: ${key}`, error.message);
         this.pendingRequests.delete(key);
         throw error;
       });
@@ -75,7 +140,8 @@ class RequestManager {
     this.pendingRequests.set(key, {
       promise,
       abortController,
-      timestamp: Date.now()
+      timestamp: now,
+      lastCall: now
     });
 
     return promise;
@@ -89,7 +155,7 @@ class RequestManager {
     const request = this.pendingRequests.get(key);
     
     if (request) {
-      console.log(`🛑 取消请求: ${key}`);
+      this.debugLog(`🛑 取消请求: ${key}`);
       request.abortController.abort();
       this.pendingRequests.delete(key);
     }
@@ -99,13 +165,28 @@ class RequestManager {
    * 取消所有正在进行的请求
    */
   cancelAllRequests(): void {
-    console.log(`🛑 取消所有请求 (${this.pendingRequests.size} 个)`);
+    this.debugLog(`🛑 取消所有请求 (${this.pendingRequests.size} 个)`);
     // 使用Array.from转换迭代器以兼容TypeScript配置
     const entries = Array.from(this.pendingRequests.entries());
     for (const [key, request] of entries) {
       request.abortController.abort();
     }
     this.pendingRequests.clear();
+  }
+
+  /**
+   * 获取调试信息
+   */
+  getDebugInfo(): any {
+    return {
+      pendingRequests: Array.from(this.pendingRequests.keys()),
+      componentCallCounts: Array.from(this.componentCallCounts.entries()),
+      callTimestamps: Array.from(this.callTimestamps.entries()).map(([key, timestamps]) => ({
+        key,
+        count: timestamps.length,
+        lastCall: timestamps[timestamps.length - 1]
+      }))
+    };
   }
 
   /**
