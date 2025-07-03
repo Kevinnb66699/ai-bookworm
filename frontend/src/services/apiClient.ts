@@ -1,8 +1,11 @@
 import axios from 'axios';
+import { corsProxyService } from './corsProxy';
 
 // 创建API客户端实例
+const baseURL = process.env.REACT_APP_API_URL || 'https://ai-bookworm-backend.vercel.app';
+
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+  baseURL: corsProxyService.processUrl(baseURL),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -18,6 +21,10 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // 应用代理配置到请求头
+    config = corsProxyService.processRequestConfig(config);
+    
     return config;
   },
   (error) => {
