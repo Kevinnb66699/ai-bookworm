@@ -11,7 +11,12 @@ bp = Blueprint('auth', __name__)
 
 @bp.route('/api/auth/register', methods=['POST'])
 def register():
+    print(f"注册请求到达，方法: {request.method}")
+    print(f"请求头: {dict(request.headers)}")
+    
     data = request.get_json()
+    print(f"请求数据: {data}")
+    
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')

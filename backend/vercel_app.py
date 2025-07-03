@@ -19,27 +19,27 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     # 导入应用工厂函数
     from app import create_app, db
-    from flask_cors import CORS
     
     # 创建应用实例
     app = create_app()
     
-    # 额外的 CORS 配置确保 Vercel 部署正常工作
-    CORS(app, 
-         origins="*",
-         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-         allow_headers=["Content-Type", "Authorization"],
-         supports_credentials=False)
+    # 手动添加 CORS 头部 - 更可靠的方式
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
     
-    # 添加全局 OPTIONS 处理
+    # 处理 OPTIONS 预检请求
     @app.before_request
-    def handle_preflight():
+    def handle_options():
         from flask import request, make_response
         if request.method == "OPTIONS":
             response = make_response()
             response.headers.add("Access-Control-Allow-Origin", "*")
-            response.headers.add('Access-Control-Allow-Headers', "*")
-            response.headers.add('Access-Control-Allow-Methods', "*")
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+            response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
             return response
     
     # 添加健康检查路由
