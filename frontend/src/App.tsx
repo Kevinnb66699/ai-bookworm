@@ -142,7 +142,7 @@ const AppContent: React.FC = () => {
         </Routes>
       </Content>
       <Footer style={{ textAlign: 'center' }}>
-        AI 书童 ©{new Date().getFullYear()} Created by Your Name
+        AI 书童 ©{new Date().getFullYear()} Created by Kevin
       </Footer>
     </Layout>
   );
