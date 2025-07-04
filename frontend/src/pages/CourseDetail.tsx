@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Button, Tabs, message, Space, Typography } from 'antd';
-import { getCourse } from '../services/courseService';
+import { Card, Button, Tabs, message, Space, Typography, Popconfirm } from 'antd';
+import { getCourse, deleteCourse } from '../services/courseService';
 import WordList from '../components/Course/WordList';
 import TextList from '../components/Text/TextList';
 import ProgressComponent from '../components/Course/Progress';
@@ -83,8 +83,15 @@ const CourseDetail: React.FC = () => {
     }
   };
 
-  const handleDelete = () => {
-    // Implement the delete logic here
+  const handleDelete = async () => {
+    try {
+      await deleteCourse(courseId);
+      message.success('课程删除成功');
+      navigate('/courses');
+    } catch (error: any) {
+      console.error('删除课程失败:', error);
+      message.error('删除课程失败');
+    }
   };
 
   if (courseLoading && !course) {
@@ -107,12 +114,17 @@ const CourseDetail: React.FC = () => {
             >
               编辑课程
             </Button>
-            <Button 
-              danger
-              onClick={handleDelete}
+            <Popconfirm
+              title="确定要删除这个课程吗？"
+              description="删除后将无法恢复，包括所有单词和课文数据"
+              onConfirm={handleDelete}
+              okText="确定"
+              cancelText="取消"
             >
-              删除课程
-            </Button>
+              <Button danger>
+                删除课程
+              </Button>
+            </Popconfirm>
           </Space>
         }
       >
