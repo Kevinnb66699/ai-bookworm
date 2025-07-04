@@ -298,15 +298,27 @@ const WordPractice: React.FC<WordPracticeProps> = ({ courseId }) => {
               <div style={{ marginBottom: 16, fontSize: '18px' }}>
                 {isEnglishToChinese ? currentWord.word : (Array.isArray(currentWord.meanings) ? currentWord.meanings : []).join('、')}
               </div>
-              <Input
-                ref={inputRef}
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                placeholder={isEnglishToChinese ? '请输入中文含义' : '请输入英文单词'}
-                onPressEnter={handleSubmit}
-                disabled={loading || isCorrect !== null}
-                autoFocus
-              />
+              <Input.Group compact>
+                <Input
+                  ref={inputRef}
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  placeholder={isEnglishToChinese ? '请输入中文含义' : '请输入英文单词'}
+                  onPressEnter={handleSubmit}
+                  disabled={loading || isCorrect !== null}
+                  autoFocus
+                  style={{ width: 'calc(100% - 80px)' }}
+                />
+                <Button
+                  type="primary"
+                  onClick={handleSubmit}
+                  disabled={loading || isCorrect !== null || !userAnswer.trim()}
+                  loading={loading}
+                  style={{ width: '80px' }}
+                >
+                  提交
+                </Button>
+              </Input.Group>
               {isCorrect !== null && (
                 <div style={{ marginTop: 16 }}>
                   <div style={{ color: isCorrect ? 'green' : 'red' }}>
