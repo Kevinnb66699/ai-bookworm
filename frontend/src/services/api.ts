@@ -133,12 +133,12 @@ export const words = {
     delete: (id: number) =>
         api.delete(`/api/words/${id}`),
     
-    practice: (courseId: number, type: string) =>
-        api.get(`/api/words/practice?course_id=${courseId}&type=${type}`),
+    practice: (courseId: number, type: string, signal?: AbortSignal) =>
+        api.get(`/api/words/practice?course_id=${courseId}&type=${type}`, { signal }),
     
-    submitPractice: (data: any) => {
+    submitPractice: (data: any, signal?: AbortSignal) => {
         const { word_id, ...practiceData } = data;
-        return api.post(`/api/words/${word_id}/practice`, practiceData);
+        return api.post(`/api/words/${word_id}/practice`, practiceData, { signal });
     },
     
     getStats: (courseId: number) =>

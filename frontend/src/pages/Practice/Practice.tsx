@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Word } from '../../types';
 import { words } from '../../services/api';
@@ -23,19 +23,57 @@ const Practice: React.FC = () => {
         userAnswer: string;
         correctAnswer?: string;
     } | null>(null);
+    
+    // 新增：请求控制相关状态
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingNext, setIsLoadingNext] = useState(false);
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const submitAbortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         if (courseId) {
             loadNextWord();
         }
-    }, [courseId]); // 只依赖courseId，移除practiceMode避免频繁触发
+        // 清理函数：组件卸载时取消所有请求
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            if (submitAbortControllerRef.current) {
+                submitAbortControllerRef.current.abort();
+            }
+        };
+    }, [courseId]);
 
-    const loadNextWord = async () => {
+    // 使用 useCallback 避免函数重复创建
+    const loadNextWord = useCallback(async () => {
+        // 防止重复请求
+        if (isLoadingNext) {
+            console.log('正在加载中，忽略重复请求');
+            return;
+        }
+
         try {
+            setIsLoadingNext(true);
             setLoading(true);
             setError(null);
             
-            const response = await words.practice(Number(courseId!), 'word');
+            // 取消之前的请求
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            
+            // 创建新的 AbortController
+            abortControllerRef.current = new AbortController();
+            
+            console.log('开始加载下一个单词...');
+            const response = await words.practice(Number(courseId!), practiceMode, abortControllerRef.current.signal);
+            
+            // 检查请求是否被取消
+            if (abortControllerRef.current.signal.aborted) {
+                console.log('请求被取消');
+                return;
+            }
             
             if (response.data && response.data.length > 0) {
                 setCurrentWord(response.data[0]);
@@ -43,26 +81,47 @@ const Practice: React.FC = () => {
                 setShowResult(false);
                 setSubmitError(null);
                 setLastResult(null);
+                console.log('成功加载单词:', response.data[0]);
             } else {
                 setCompleted(true);
+                console.log('练习完成');
             }
         } catch (error: any) {
+            // 如果是取消请求，不显示错误
+            if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+                console.log('请求被取消');
+                return;
+            }
+            
             console.error('Error loading practice word:', error);
-            // 简化错误处理，避免循环
             setError('加载练习题失败，请手动刷新页面');
             setCurrentWord(null);
         } finally {
             setLoading(false);
+            setIsLoadingNext(false);
         }
-    };
+    }, [courseId, practiceMode, isLoadingNext]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!currentWord) return;
+        if (!currentWord || isSubmitting) {
+            console.log('提交被阻止：', { currentWord: !!currentWord, isSubmitting });
+            return;
+        }
 
         try {
+            setIsSubmitting(true);
             setSubmitError(null);
-            console.log('Submitting practice:', {
+            
+            // 取消之前的提交请求
+            if (submitAbortControllerRef.current) {
+                submitAbortControllerRef.current.abort();
+            }
+            
+            // 创建新的 AbortController
+            submitAbortControllerRef.current = new AbortController();
+            
+            console.log('提交答案:', {
                 word_id: currentWord.id,
                 answer: answer,
                 course_id: Number(courseId!)
@@ -72,9 +131,15 @@ const Practice: React.FC = () => {
                 word_id: currentWord.id,
                 answer: answer,
                 course_id: Number(courseId!)
-            });
+            }, submitAbortControllerRef.current.signal);
             
-            console.log('Practice response:', response);
+            // 检查请求是否被取消
+            if (submitAbortControllerRef.current.signal.aborted) {
+                console.log('提交请求被取消');
+                return;
+            }
+            
+            console.log('提交成功:', response);
             
             setShowResult(true);
             setTotalQuestions(prev => prev + 1);
@@ -90,30 +155,58 @@ const Practice: React.FC = () => {
                 
                 if (isCorrect) {
                     setScore(prev => prev + 1);
-                    console.log('Answer is correct!');
+                    console.log('答案正确！');
                 } else {
-                    console.log('Answer is incorrect. Correct answer:', response.data.correct_meaning);
+                    console.log('答案错误，正确答案:', response.data.correct_meaning);
                 }
             } else {
-                console.warn('Unexpected response structure:', response.data);
-                // 如果响应结构不符合预期，但没有错误，假设提交成功
+                console.warn('响应结构异常:', response.data);
                 setLastResult({
-                    isCorrect: true, // 假设正确
+                    isCorrect: true,
                     userAnswer: answer
                 });
-                console.log('Response received but structure is unexpected, assuming success');
             }
         } catch (error: any) {
-            console.error('Error checking practice:', error);
-            // 简化错误处理，显示具体错误但不自动重试
+            // 如果是取消请求，不显示错误
+            if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+                console.log('提交请求被取消');
+                return;
+            }
+            
+            console.error('提交失败:', error);
             const errorMessage = error.response?.data?.error || '提交答案失败，请稍后重试';
             setSubmitError(errorMessage);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
-    const handleNext = () => {
+    // 防抖处理：防止快速连续点击
+    const handleNext = useCallback(() => {
+        if (isLoadingNext || isSubmitting) {
+            console.log('操作被阻止：正在处理中');
+            return;
+        }
         loadNextWord();
-    };
+    }, [loadNextWord, isLoadingNext, isSubmitting]);
+
+    // 练习模式切换处理
+    const handleModeChange = useCallback((mode: PracticeMode) => {
+        if (isLoadingNext || isSubmitting) {
+            console.log('模式切换被阻止：正在处理中');
+            return;
+        }
+        
+        console.log('切换练习模式:', mode);
+        setPracticeMode(mode);
+        
+        // 延迟加载新模式的内容，避免竞态条件
+        setTimeout(() => {
+            if (!isLoadingNext && !isSubmitting) {
+                loadNextWord();
+            }
+        }, 100);
+    }, [isLoadingNext, isSubmitting, loadNextWord]);
 
     // 错误状态显示
     if (error) {
@@ -173,25 +266,29 @@ const Practice: React.FC = () => {
                 <div className="practice-mode-selector">
                     <button
                         className={`btn ${practiceMode === 'word' ? 'btn-primary' : 'btn-outline'}`}
-                        onClick={() => setPracticeMode('word')}
+                        onClick={() => handleModeChange('word')}
+                        disabled={isLoadingNext || isSubmitting}
                     >
                         单词练习
                     </button>
                     <button
                         className={`btn ${practiceMode === 'text_fill' ? 'btn-primary' : 'btn-outline'}`}
-                        onClick={() => setPracticeMode('text_fill')}
+                        onClick={() => handleModeChange('text_fill')}
+                        disabled={isLoadingNext || isSubmitting}
                     >
                         填空练习
                     </button>
                     <button
                         className={`btn ${practiceMode === 'text_full' ? 'btn-primary' : 'btn-outline'}`}
-                        onClick={() => setPracticeMode('text_full')}
+                        onClick={() => handleModeChange('text_full')}
+                        disabled={isLoadingNext || isSubmitting}
                     >
                         全文练习
                     </button>
                 </div>
                 <div className="practice-progress">
                     得分: {score}/{totalQuestions}
+                    {(isLoadingNext || isSubmitting) && <span className="processing"> (处理中...)</span>}
                 </div>
             </div>
 
@@ -211,7 +308,7 @@ const Practice: React.FC = () => {
                                 id="answer"
                                 value={answer}
                                 onChange={e => setAnswer(e.target.value)}
-                                disabled={showResult}
+                                disabled={showResult || isSubmitting}
                                 required
                             />
                         </div>
@@ -244,13 +341,18 @@ const Practice: React.FC = () => {
                                     type="button"
                                     className="btn btn-primary"
                                     onClick={handleNext}
+                                    disabled={isLoadingNext || isSubmitting}
                                 >
-                                    下一个
+                                    {isLoadingNext ? '加载中...' : '下一个'}
                                 </button>
                             </div>
                         ) : (
-                            <button type="submit" className="btn btn-primary">
-                                提交
+                            <button 
+                                type="submit" 
+                                className="btn btn-primary"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? '提交中...' : '提交'}
                             </button>
                         )}
                     </form>
@@ -258,7 +360,11 @@ const Practice: React.FC = () => {
             ) : (
                 <div className="no-word">
                     <p>没有找到练习题</p>
-                    <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                    <button 
+                        className="btn btn-primary" 
+                        onClick={() => window.location.reload()}
+                        disabled={isLoadingNext || isSubmitting}
+                    >
                         刷新页面
                     </button>
                 </div>

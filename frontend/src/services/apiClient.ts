@@ -23,6 +23,13 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // 支持请求取消
+    if (config.signal) {
+      // 如果配置中已有signal，保持原有的
+      return config;
+    }
+    
     return config;
   },
   (error) => {
@@ -35,6 +42,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // 处理请求取消
+    if (error.code === 'ERR_CANCELED' || error.name === 'AbortError') {
+      console.log('请求被取消:', error.message);
+      return Promise.reject(error);
+    }
+    
     // 处理401错误（未授权）
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
@@ -47,5 +60,19 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// 导出支持取消的请求方法
+export const createCancelableRequest = (abortController: AbortController) => {
+  return {
+    get: (url: string, config = {}) => 
+      apiClient.get(url, { ...config, signal: abortController.signal }),
+    post: (url: string, data = {}, config = {}) => 
+      apiClient.post(url, data, { ...config, signal: abortController.signal }),
+    put: (url: string, data = {}, config = {}) => 
+      apiClient.put(url, data, { ...config, signal: abortController.signal }),
+    delete: (url: string, config = {}) => 
+      apiClient.delete(url, { ...config, signal: abortController.signal }),
+  };
+};
 
 export default apiClient; 
