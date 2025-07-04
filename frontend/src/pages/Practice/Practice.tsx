@@ -25,8 +25,10 @@ const Practice: React.FC = () => {
     } | null>(null);
 
     useEffect(() => {
-        loadNextWord();
-    }, [courseId, practiceMode]);
+        if (courseId) {
+            loadNextWord();
+        }
+    }, [courseId]); // 只依赖courseId，移除practiceMode避免频繁触发
 
     const loadNextWord = async () => {
         try {
@@ -46,8 +48,8 @@ const Practice: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Error loading practice word:', error);
-            const errorMessage = error.response?.data?.message || error.message || '加载练习题失败';
-            setError(`加载失败: ${errorMessage}`);
+            // 简化错误处理，避免循环
+            setError('加载练习题失败，请手动刷新页面');
             setCurrentWord(null);
         } finally {
             setLoading(false);
@@ -103,37 +105,13 @@ const Practice: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Error checking practice:', error);
-            console.error('Error details:', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status
-            });
-            
-            let errorMessage = '';
-            
-            if (error.response?.status === 404) {
-                errorMessage = '单词不存在，请刷新页面重试';
-            } else if (error.response?.status === 400) {
-                errorMessage = error.response?.data?.error || '请求参数错误';
-            } else if (error.response?.status >= 500) {
-                errorMessage = '服务器错误，请稍后重试';
-            } else if (error.response?.data?.error) {
-                errorMessage = error.response.data.error;
-            } else if (error.message) {
-                errorMessage = `网络错误: ${error.message}`;
-            } else {
-                errorMessage = '提交答案失败，请重试';
-            }
-            
+            // 简化错误处理，显示具体错误但不自动重试
+            const errorMessage = error.response?.data?.error || '提交答案失败，请稍后重试';
             setSubmitError(errorMessage);
         }
     };
 
     const handleNext = () => {
-        loadNextWord();
-    };
-
-    const handleRetry = () => {
         loadNextWord();
     };
 
@@ -145,8 +123,8 @@ const Practice: React.FC = () => {
                     <h2>出现错误</h2>
                     <p>{error}</p>
                     <div className="error-actions">
-                        <button className="btn btn-primary" onClick={handleRetry}>
-                            重新加载
+                        <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                            刷新页面
                         </button>
                         <button className="btn btn-secondary" onClick={() => window.history.back()}>
                             返回课程
@@ -246,7 +224,7 @@ const Practice: React.FC = () => {
                                     className="btn btn-outline btn-sm"
                                     onClick={() => setSubmitError(null)}
                                 >
-                                    重试
+                                    关闭
                                 </button>
                             </div>
                         )}
@@ -280,8 +258,8 @@ const Practice: React.FC = () => {
             ) : (
                 <div className="no-word">
                     <p>没有找到练习题</p>
-                    <button className="btn btn-primary" onClick={handleRetry}>
-                        重新加载
+                    <button className="btn btn-primary" onClick={() => window.location.reload()}>
+                        刷新页面
                     </button>
                 </div>
             )}
