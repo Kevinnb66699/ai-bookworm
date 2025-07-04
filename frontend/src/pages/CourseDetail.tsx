@@ -15,7 +15,6 @@ const { TabPane } = Tabs;
 const { Text } = Typography;
 
 const CourseDetail: React.FC = () => {
-  console.log('CourseDetail组件渲染', Date.now());
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
@@ -131,11 +130,11 @@ const CourseDetail: React.FC = () => {
             />
           )}
         </TabPane>
-        <TabPane tab="文本列表" key="texts">
-          <TextList courseId={courseId} />
-        </TabPane>
         <TabPane tab="单词练习" key="word-practice">
           <WordPractice courseId={courseId} />
+        </TabPane>
+        <TabPane tab="文本列表" key="texts">
+          <TextList courseId={courseId} />
         </TabPane>
         <TabPane tab="文本练习" key="text-practice">
           <TextPractice courseId={courseId} />
