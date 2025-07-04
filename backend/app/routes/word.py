@@ -307,21 +307,24 @@ def submit_word_practice(word_id):
                 user_id=current_user_id,
                 word_id=word_id,
                 course_id=word.course_id,
-                next_review_time=datetime.utcnow()
+                next_review_time=datetime.utcnow(),
+                review_count=0,
+                consecutive_correct=0,
+                is_mastered=False
             )
             db.session.add(review_plan)
         
         review_plan.last_practice_time = datetime.utcnow()
-        review_plan.review_count += 1
+        review_plan.review_count = (review_plan.review_count or 0) + 1
         
         if is_correct:
-            review_plan.consecutive_correct += 1
+            review_plan.consecutive_correct = (review_plan.consecutive_correct or 0) + 1
             if review_plan.consecutive_correct >= 6:  # 连续正确6次认为已掌握
                 review_plan.is_mastered = True
         else:
             review_plan.consecutive_correct = 0
         
-        review_plan.next_review_time = calculate_next_review_time(review_plan.consecutive_correct)
+        review_plan.next_review_time = calculate_next_review_time(review_plan.consecutive_correct or 0)
         
         print(f"DEBUG: Creating WordPractice with user_id={current_user_id}, word_id={word_id}, course_id={word.course_id}, is_correct={is_correct}")
         practice = WordPractice(

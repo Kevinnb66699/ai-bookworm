@@ -1,4 +1,14 @@
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://ai-bookworm-backend.vercel.app';
+// 开发环境和生产环境的API配置
+const getDefaultApiUrl = () => {
+  // 如果是开发环境且没有设置环境变量，使用本地后端
+  if (process.env.NODE_ENV === 'development' && !process.env.REACT_APP_API_URL) {
+    return 'http://192.168.0.107:5000';
+  }
+  // 生产环境或已设置环境变量时使用默认值
+  return 'https://ai-bookworm-backend.vercel.app';
+};
+
+export const API_BASE_URL = process.env.REACT_APP_API_URL || getDefaultApiUrl();
 
 // 直接导出API URL，不使用代理
 export const getApiUrl = () => API_BASE_URL;

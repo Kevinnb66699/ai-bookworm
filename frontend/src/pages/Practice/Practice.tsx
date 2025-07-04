@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Word } from '../../types';
 import { words } from '../../services/api';
@@ -24,32 +24,24 @@ const Practice: React.FC = () => {
         correctAnswer?: string;
     } | null>(null);
     
-    // 新增：请求控制相关状态
+    // 请求控制相关状态
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingNext, setIsLoadingNext] = useState(false);
     const abortControllerRef = useRef<AbortController | null>(null);
     const submitAbortControllerRef = useRef<AbortController | null>(null);
 
-    useEffect(() => {
-        if (courseId) {
-            loadNextWord();
-        }
-        // 清理函数：组件卸载时取消所有请求
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-            if (submitAbortControllerRef.current) {
-                submitAbortControllerRef.current.abort();
-            }
-        };
-    }, [courseId]);
-
-    // 使用 useCallback 避免函数重复创建
-    const loadNextWord = useCallback(async () => {
+    // 直接定义loadNextWord函数，不使用useCallback
+    const loadNextWord = async () => {
+        console.log('🚀 loadNextWord 被调用:', {
+            isLoadingNext,
+            isSubmitting,
+            courseId,
+            practiceMode
+        });
+        
         // 防止重复请求
-        if (isLoadingNext) {
-            console.log('正在加载中，忽略重复请求');
+        if (isLoadingNext || isSubmitting) {
+            console.log('❌ 请求被阻止：正在处理中');
             return;
         }
 
@@ -66,25 +58,52 @@ const Practice: React.FC = () => {
             // 创建新的 AbortController
             abortControllerRef.current = new AbortController();
             
-            console.log('开始加载下一个单词...');
+            console.log('🌐 开始加载下一个单词...');
             const response = await words.practice(Number(courseId!), practiceMode, abortControllerRef.current.signal);
+            
+            console.log('📦 API响应收到:', response);
+            console.log('📦 响应数据结构:', response.data);
+            console.log('📦 响应数据类型:', typeof response.data);
+            console.log('📦 是否为数组:', Array.isArray(response.data));
             
             // 检查请求是否被取消
             if (abortControllerRef.current.signal.aborted) {
-                console.log('请求被取消');
+                console.log('❌ 请求被取消');
                 return;
             }
             
-            if (response.data && response.data.length > 0) {
-                setCurrentWord(response.data[0]);
-                setAnswer('');
-                setShowResult(false);
-                setSubmitError(null);
-                setLastResult(null);
-                console.log('成功加载单词:', response.data[0]);
+            // 修复：处理不同的响应格式
+            if (response.data) {
+                // 如果返回的是数组
+                if (Array.isArray(response.data) && response.data.length > 0) {
+                    setCurrentWord(response.data[0]);
+                    setAnswer('');
+                    setShowResult(false);
+                    setSubmitError(null);
+                    setLastResult(null);
+                    console.log('✅ 成功加载单词(数组格式):', response.data[0]);
+                } 
+                // 如果返回的是单个对象
+                else if (!Array.isArray(response.data) && response.data.id) {
+                    setCurrentWord(response.data);
+                    setAnswer('');
+                    setShowResult(false);
+                    setSubmitError(null);
+                    setLastResult(null);
+                    console.log('✅ 成功加载单词(对象格式):', response.data);
+                }
+                // 如果返回状态是完成
+                else if (response.data.status === 'completed') {
+                    setCompleted(true);
+                    console.log('🎉 练习完成:', response.data.message);
+                }
+                else {
+                    setCompleted(true);
+                    console.log('🤔 未知响应格式，设为完成状态');
+                }
             } else {
                 setCompleted(true);
-                console.log('练习完成');
+                console.log('📭 无数据返回，练习完成');
             }
         } catch (error: any) {
             // 如果是取消请求，不显示错误
@@ -100,7 +119,40 @@ const Practice: React.FC = () => {
             setLoading(false);
             setIsLoadingNext(false);
         }
-    }, [courseId, practiceMode, isLoadingNext]);
+    };
+
+    // 简化useEffect，移除所有函数依赖
+    useEffect(() => {
+        console.log('🔍 Practice useEffect 触发:', { 
+            courseId, 
+            practiceMode, 
+            isLoadingNext, 
+            isSubmitting,
+            hasCurrentWord: !!currentWord 
+        });
+        
+        if (courseId && !isLoadingNext && !isSubmitting) {
+            console.log('✅ 条件满足，开始调用 loadNextWord');
+            loadNextWord();
+        } else {
+            console.log('❌ 条件不满足，跳过 loadNextWord:', {
+                courseId: !!courseId,
+                isLoadingNext,
+                isSubmitting
+            });
+        }
+        
+        // 清理函数
+        return () => {
+            console.log('🧹 Practice useEffect 清理');
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            if (submitAbortControllerRef.current) {
+                submitAbortControllerRef.current.abort();
+            }
+        };
+    }, [courseId, practiceMode]); // 只依赖基本值，不依赖函数
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -181,17 +233,17 @@ const Practice: React.FC = () => {
         }
     };
 
-    // 防抖处理：防止快速连续点击
-    const handleNext = useCallback(() => {
+    // 简化handleNext，直接调用loadNextWord
+    const handleNext = () => {
         if (isLoadingNext || isSubmitting) {
             console.log('操作被阻止：正在处理中');
             return;
         }
         loadNextWord();
-    }, [loadNextWord, isLoadingNext, isSubmitting]);
+    };
 
-    // 练习模式切换处理
-    const handleModeChange = useCallback((mode: PracticeMode) => {
+    // 简化练习模式切换处理
+    const handleModeChange = (mode: PracticeMode) => {
         if (isLoadingNext || isSubmitting) {
             console.log('模式切换被阻止：正在处理中');
             return;
@@ -199,14 +251,8 @@ const Practice: React.FC = () => {
         
         console.log('切换练习模式:', mode);
         setPracticeMode(mode);
-        
-        // 延迟加载新模式的内容，避免竞态条件
-        setTimeout(() => {
-            if (!isLoadingNext && !isSubmitting) {
-                loadNextWord();
-            }
-        }, 100);
-    }, [isLoadingNext, isSubmitting, loadNextWord]);
+        // useEffect会自动处理模式切换
+    };
 
     // 错误状态显示
     if (error) {

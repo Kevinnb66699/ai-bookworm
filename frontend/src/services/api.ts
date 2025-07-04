@@ -134,7 +134,7 @@ export const words = {
         api.delete(`/api/words/${id}`),
     
     practice: (courseId: number, type: string, signal?: AbortSignal) =>
-        api.get(`/api/words/practice?course_id=${courseId}&type=${type}`, { signal }),
+        api.get(`/api/courses/${courseId}/words/practice`, { signal }),
     
     submitPractice: (data: any, signal?: AbortSignal) => {
         const { word_id, ...practiceData } = data;

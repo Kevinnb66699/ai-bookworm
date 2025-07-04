@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Button, Tabs, message, Space, Drawer, Badge, Typography } from 'antd';
+import { Card, Button, Tabs, message, Space, Typography } from 'antd';
 import { getCourse } from '../services/courseService';
 import WordList from '../components/Course/WordList';
 import TextList from '../components/Text/TextList';
@@ -11,129 +11,83 @@ import { getWords } from '../services/wordService';
 import { Course } from '../services/courseService';
 import { Word } from '../services/wordService';
 
-
-
 const { TabPane } = Tabs;
 const { Text } = Typography;
 
 const CourseDetail: React.FC = () => {
+  console.log('CourseDetail组件渲染', Date.now());
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [words, setWords] = useState<Word[]>([]);
   const [courseLoading, setCourseLoading] = useState(true);
   const [wordsLoading, setWordsLoading] = useState(true);
-  const [debugDrawerVisible, setDebugDrawerVisible] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
-  
-  // 使用ref跟踪请求状态，防止重复请求
-  const fetchingCourse = useRef(false);
-  const fetchingWords = useRef(false);
-  
-  // 使用ref保存AbortController，用于取消请求
-  const abortControllerRef = useRef<AbortController | null>(null);
-  
-  // 稳定的courseId值，避免每次渲染时重新计算
+
   const courseId = useMemo(() => Number(id), [id]);
 
-  // 移除调试信息相关逻辑
+  useEffect(() => {
+    let isMounted = true;
+    setCourseLoading(true);
+    setWordsLoading(true);
+    setCourse(null);
+    setWords([]);
 
-  const fetchCourse = useCallback(async () => {
-    if (fetchingCourse.current) {
-      console.log('Course fetch already in progress, skipping...');
-      return;
-    }
-    
-    try {
-      fetchingCourse.current = true;
-      setCourseLoading(true);
-      
-      console.log('Fetching course:', courseId);
-      const data = await getCourse(courseId);
-      setCourse(data);
-      console.log('Course fetched successfully:', data.name);
-    } catch (error: any) {
-      console.error('Failed to fetch course:', error);
-      message.error(error.response?.data?.error || '获取课程信息失败');
-      navigate('/courses');
-    } finally {
+    if (!courseId || isNaN(courseId)) {
       setCourseLoading(false);
-      fetchingCourse.current = false;
-    }
-  }, [courseId, navigate]);
-
-  const fetchWords = useCallback(async () => {
-    if (fetchingWords.current) {
-      console.log('Words fetch already in progress, skipping...');
+      setWordsLoading(false);
       return;
     }
-    
-    try {
-      fetchingWords.current = true;
-      setWordsLoading(true);
-      
-      console.log('Fetching words for course:', courseId);
-      const data = await getWords(courseId);
-      setWords(data);
-      console.log('Words fetched successfully:', data.length, 'words');
-    } catch (error: any) {
-      console.error('Failed to fetch words:', error);
-      message.error('获取单词列表失败');
-    } finally {
-      setWordsLoading(false);
-      fetchingWords.current = false;
-    }
+
+    getCourse(courseId)
+      .then(data => {
+        if (isMounted) setCourse(data && typeof data === 'object' ? data : null);
+      })
+      .catch(() => {
+        if (isMounted) {
+          setCourse(null);
+          message.error('获取课程详情失败');
+        }
+      })
+      .finally(() => {
+        if (isMounted) setCourseLoading(false);
+      });
+
+    getWords(courseId)
+      .then(data => {
+        if (isMounted) setWords(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (isMounted) {
+          setWords([]);
+          message.error('获取单词列表失败');
+        }
+      })
+      .finally(() => {
+        if (isMounted) setWordsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [courseId]);
 
-  useEffect(() => {
-    // 取消之前的请求
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    
-    // 创建新的AbortController
-    abortControllerRef.current = new AbortController();
-    
-    if (courseId) {
-      console.log('CourseDetail useEffect triggered for courseId:', courseId);
-      
-      // 重置状态
-      setCourse(null);
+  const handleWordChange = async () => {
+    setWordsLoading(true);
+    try {
+      const data = await getWords(courseId);
+      setWords(Array.isArray(data) ? data : []);
+    } catch {
       setWords([]);
-      fetchingCourse.current = false;
-      fetchingWords.current = false;
-      
-      // 并行获取数据，但各自管理loading状态
-      fetchCourse();
-      fetchWords();
+      message.error('刷新单词列表失败');
+    } finally {
+      setWordsLoading(false);
     }
-    
-    // 清理函数
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [courseId, fetchCourse, fetchWords]);
+  };
 
-  // 稳定的handleWordChange函数，避免每次渲染时重新创建
-  const handleWordChange = useCallback(async () => {
-    console.log('handleWordChange called');
-    // 添加防抖，避免快速连续调用
-    if (!fetchingWords.current) {
-      await fetchWords();
-    } else {
-      console.log('Words refresh skipped - already in progress');
-    }
-  }, [fetchWords]);
-
-  const handleDelete = useCallback(() => {
+  const handleDelete = () => {
     // Implement the delete logic here
-  }, []);
+  };
 
-  // 移除调试信息渲染函数
-
-  // 分别处理loading状态
   if (courseLoading && !course) {
     return <div>加载课程信息中...</div>;
   }
@@ -165,9 +119,6 @@ const CourseDetail: React.FC = () => {
       >
         <p>{course.description}</p>
       </Card>
-
-      {/* 移除调试信息抽屉 */}
-
       <Tabs defaultActiveKey="words" style={{ marginTop: 16 }}>
         <TabPane tab="单词列表" key="words">
           {wordsLoading ? (
@@ -197,4 +148,4 @@ const CourseDetail: React.FC = () => {
   );
 };
 
-export default CourseDetail; 
+export default CourseDetail;

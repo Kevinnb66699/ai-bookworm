@@ -12,10 +12,18 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-root.render(
+
+// 暂时禁用StrictMode进行调试
+const AppComponent = process.env.NODE_ENV === 'development' ? (
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+) : (
   <React.StrictMode>
     <AuthProvider>
       <App />
     </AuthProvider>
   </React.StrictMode>
-); 
+);
+
+root.render(AppComponent); 

@@ -112,7 +112,7 @@ const WordPractice: React.FC<WordPracticeProps> = ({ courseId }) => {
     try {
       setLoading(true);
       const isAnswerCorrect = isEnglishToChinese
-        ? currentWord.meanings.some(meaning => 
+        ? (Array.isArray(currentWord.meanings) ? currentWord.meanings : []).some(meaning => 
             meaning.toLowerCase().trim() === userAnswer.toLowerCase().trim()
           )
         : currentWord.word.toLowerCase().trim() === userAnswer.toLowerCase().trim();
@@ -220,7 +220,7 @@ const WordPractice: React.FC<WordPracticeProps> = ({ courseId }) => {
     if (!currentWord) return;
     
     // 检查答案是否匹配任何一个释义
-    const isCorrect = currentWord.meanings.some(meaning => 
+    const isCorrect = (Array.isArray(currentWord.meanings) ? currentWord.meanings : []).some(meaning => 
       answer.trim().toLowerCase() === meaning.trim().toLowerCase()
     );
 
@@ -296,7 +296,7 @@ const WordPractice: React.FC<WordPracticeProps> = ({ courseId }) => {
           ) : currentWord ? (
             <div>
               <div style={{ marginBottom: 16, fontSize: '18px' }}>
-                {isEnglishToChinese ? currentWord.word : (currentWord.meanings || []).join('、')}
+                {isEnglishToChinese ? currentWord.word : (Array.isArray(currentWord.meanings) ? currentWord.meanings : []).join('、')}
               </div>
               <Input
                 ref={inputRef}
@@ -315,7 +315,7 @@ const WordPractice: React.FC<WordPracticeProps> = ({ courseId }) => {
                   <div style={{ marginTop: 8 }}>
                     {isEnglishToChinese ? (
                       <>
-                        正确答案：{(currentWord.meanings || []).join('、')}
+                        正确答案：{(Array.isArray(currentWord.meanings) ? currentWord.meanings : []).join('、')}
                         {currentWord.pronunciation && (
                           <div>发音：{currentWord.pronunciation}</div>
                         )}

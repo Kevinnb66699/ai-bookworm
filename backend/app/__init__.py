@@ -65,7 +65,7 @@ def create_app():
     
     # 修复CORS配置 - 支持本地文件测试
     CORS(app, 
-         origins=True,  # 允许所有来源，包括本地文件
+         origins="*",  # 允许所有来源，包括本地文件
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
          supports_credentials=False,

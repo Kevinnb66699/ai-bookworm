@@ -14,7 +14,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import CourseList from './pages/CourseList';
-import CoursePage from './pages/CoursePage';
+import CourseDetail from './pages/CourseDetail';
 import CreateCourse from './components/Course/CreateCourse';
 import WordPractice from './components/Practice/WordPractice';
 import TextRecitation from './pages/TextRecitation';
@@ -134,7 +134,7 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<Home />} />
           <Route path="/courses" element={<CourseList />} />
           <Route path="/courses/create" element={<CreateCourse />} />
-          <Route path="/courses/:id" element={<CoursePage />} />
+          <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/courses/:id/edit" element={<CreateCourse />} />
           <Route path="/text-recitation" element={<TextRecitation />} />
           <Route path="/profile" element={<div>个人信息页面（开发中）</div>} />
