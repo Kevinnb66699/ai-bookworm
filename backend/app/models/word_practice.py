@@ -7,6 +7,7 @@ class WordPractice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     word_id = db.Column(db.Integer, db.ForeignKey('words.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     is_correct = db.Column(db.Boolean, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -20,6 +21,7 @@ class WordPractice(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'word_id': self.word_id,
+            'course_id': self.course_id,
             'is_correct': self.is_correct,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()

@@ -13,6 +13,7 @@ class ReviewPlan(db.Model):
     status = Column(String(20), default='pending')
     next_review_time = Column(DateTime, nullable=False)
     last_review_time = Column(DateTime)
+    last_practice_time = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
     review_count = Column(Integer, default=0)  # 复习次数
     consecutive_correct = Column(Integer, default=0)  # 连续正确次数
@@ -32,6 +33,7 @@ class ReviewPlan(db.Model):
             'status': self.status,
             'nextReviewTime': self.next_review_time.isoformat(),
             'lastReviewTime': self.last_review_time.isoformat() if self.last_review_time else None,
+            'lastPracticeTime': self.last_practice_time.isoformat() if self.last_practice_time else None,
             'createdAt': self.created_at.isoformat(),
             'review_count': self.review_count,
             'consecutive_correct': self.consecutive_correct,
