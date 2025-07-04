@@ -22,6 +22,9 @@ def create_app():
     allowed_origins = [
         "http://localhost:3000",
         "https://localhost:3000",
+        # 自定义域名
+        "https://uitauita.com",
+        "https://www.uitauita.com",
         # 各种可能的前端部署URL格式
         "https://ai-bookworm-frontend.vercel.app",
         "https://ai-bookworm-frontend-git-main-kevinnb66699.vercel.app",
