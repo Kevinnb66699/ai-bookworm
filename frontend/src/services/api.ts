@@ -136,8 +136,10 @@ export const words = {
     practice: (courseId: number, type: string) =>
         api.get(`/api/words/practice?course_id=${courseId}&type=${type}`),
     
-    submitPractice: (data: any) =>
-        api.post('/api/words/practice', data),
+    submitPractice: (data: any) => {
+        const { word_id, ...practiceData } = data;
+        return api.post(`/api/words/${word_id}/practice`, practiceData);
+    },
     
     getStats: (courseId: number) =>
         api.get(`/api/words/stats?course_id=${courseId}`),

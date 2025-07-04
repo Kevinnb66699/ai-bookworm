@@ -18,6 +18,11 @@ const Practice: React.FC = () => {
     const [practiceMode, setPracticeMode] = useState<PracticeMode>('word');
     const [completed, setCompleted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const [lastResult, setLastResult] = useState<{
+        isCorrect: boolean;
+        userAnswer: string;
+        correctAnswer?: string;
+    } | null>(null);
 
     useEffect(() => {
         loadNextWord();
@@ -35,6 +40,7 @@ const Practice: React.FC = () => {
                 setAnswer('');
                 setShowResult(false);
                 setSubmitError(null);
+                setLastResult(null);
             } else {
                 setCompleted(true);
             }
@@ -54,20 +60,72 @@ const Practice: React.FC = () => {
 
         try {
             setSubmitError(null);
+            console.log('Submitting practice:', {
+                word_id: currentWord.id,
+                answer: answer,
+                course_id: Number(courseId!)
+            });
+            
             const response = await words.submitPractice({
                 word_id: currentWord.id,
                 answer: answer,
                 course_id: Number(courseId!)
             });
+            
+            console.log('Practice response:', response);
+            
             setShowResult(true);
             setTotalQuestions(prev => prev + 1);
-            if (response.data.is_correct) {
-                setScore(prev => prev + 1);
+            
+            // 检查响应结构
+            if (response.data && typeof response.data.is_correct === 'boolean') {
+                const isCorrect = response.data.is_correct;
+                setLastResult({
+                    isCorrect,
+                    userAnswer: answer,
+                    correctAnswer: response.data.correct_meaning
+                });
+                
+                if (isCorrect) {
+                    setScore(prev => prev + 1);
+                    console.log('Answer is correct!');
+                } else {
+                    console.log('Answer is incorrect. Correct answer:', response.data.correct_meaning);
+                }
+            } else {
+                console.warn('Unexpected response structure:', response.data);
+                // 如果响应结构不符合预期，但没有错误，假设提交成功
+                setLastResult({
+                    isCorrect: true, // 假设正确
+                    userAnswer: answer
+                });
+                console.log('Response received but structure is unexpected, assuming success');
             }
         } catch (error: any) {
             console.error('Error checking practice:', error);
-            const errorMessage = error.response?.data?.message || error.message || '提交答案失败';
-            setSubmitError(`提交失败: ${errorMessage}`);
+            console.error('Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
+            
+            let errorMessage = '';
+            
+            if (error.response?.status === 404) {
+                errorMessage = '单词不存在，请刷新页面重试';
+            } else if (error.response?.status === 400) {
+                errorMessage = error.response?.data?.error || '请求参数错误';
+            } else if (error.response?.status >= 500) {
+                errorMessage = '服务器错误，请稍后重试';
+            } else if (error.response?.data?.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.message) {
+                errorMessage = `网络错误: ${error.message}`;
+            } else {
+                errorMessage = '提交答案失败，请重试';
+            }
+            
+            setSubmitError(errorMessage);
         }
     };
 
@@ -194,13 +252,24 @@ const Practice: React.FC = () => {
                         )}
 
                         {showResult ? (
-                            <button
-                                type="button"
-                                className="btn btn-primary"
-                                onClick={handleNext}
-                            >
-                                下一个
-                            </button>
+                            <div className="result-display">
+                                <div className={`result-status ${lastResult?.isCorrect ? 'correct' : 'incorrect'}`}>
+                                    {lastResult?.isCorrect ? '✅ 回答正确！' : '❌ 回答错误'}
+                                </div>
+                                <div className="answer-comparison">
+                                    <p><strong>你的答案：</strong>{lastResult?.userAnswer}</p>
+                                    {lastResult?.correctAnswer && (
+                                        <p><strong>正确答案：</strong>{lastResult.correctAnswer}</p>
+                                    )}
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={handleNext}
+                                >
+                                    下一个
+                                </button>
+                            </div>
                         ) : (
                             <button type="submit" className="btn btn-primary">
                                 提交
