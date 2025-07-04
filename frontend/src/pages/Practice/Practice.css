@@ -121,4 +121,163 @@
     height: 200px;
     font-size: 1.2rem;
     color: #666;
+}
+
+/* 新增：错误处理样式 */
+.practice-error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+    padding: 2rem;
+}
+
+.error-message {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 3rem;
+    text-align: center;
+    max-width: 500px;
+    border-left: 4px solid #dc3545;
+}
+
+.error-message h2 {
+    color: #dc3545;
+    margin: 0 0 1rem 0;
+    font-size: 1.5rem;
+}
+
+.error-message p {
+    color: #666;
+    margin: 0 0 2rem 0;
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* 新增：加载状态样式 */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+    padding: 2rem;
+}
+
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading p {
+    color: #666;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* 新增：完成状态操作按钮样式 */
+.completed-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* 新增：提交错误样式 */
+.submit-error {
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.error-text {
+    color: #dc3545;
+    margin: 0;
+    font-size: 0.9rem;
+    flex: 1;
+}
+
+.submit-error .btn {
+    flex-shrink: 0;
+}
+
+/* 新增：没有练习题状态样式 */
+.no-word {
+    text-align: center;
+    padding: 3rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin: 2rem auto;
+    max-width: 500px;
+}
+
+.no-word p {
+    color: #666;
+    margin: 0 0 2rem 0;
+    font-size: 1.1rem;
+}
+
+/* 响应式设计优化 */
+@media (max-width: 768px) {
+    .practice {
+        padding: 1rem;
+    }
+    
+    .practice-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .practice-mode-selector {
+        order: 1;
+    }
+    
+    .practice-progress {
+        order: 2;
+        text-align: center;
+    }
+    
+    .error-actions,
+    .completed-actions {
+        flex-direction: column;
+    }
+    
+    .submit-error {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .word-display h2 {
+        font-size: 2rem;
+    }
 } 
