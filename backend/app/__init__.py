@@ -87,7 +87,7 @@ def create_app():
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         response.headers['Access-Control-Max-Age'] = '3600'
         return response
-
+    
     # 添加全局 OPTIONS 处理
     @app.before_request
     def handle_preflight():

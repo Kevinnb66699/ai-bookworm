@@ -1,5 +1,4 @@
 import apiClient from './apiClient';
-import { requestManager } from './requestManager';
 
 export interface Word {
   id: number;
@@ -44,82 +43,32 @@ export interface PracticeProgress {
 }
 
 export const getWords = async (courseId: number): Promise<Word[]> => {
-  return await requestManager.executeRequest(
-    async (abortSignal) => {
-      const response = await apiClient.get(`/api/courses/${courseId}/words`, { 
-        signal: abortSignal 
-      });
-      return response.data;
-    },
-    `/api/courses/${courseId}/words`,
-    'GET'
-  );
+  const response = await apiClient.get(`/api/courses/${courseId}/words`);
+  return response.data;
 };
 
 export const getWord = async (id: number): Promise<Word> => {
-  return await requestManager.executeRequest(
-    async (abortSignal) => {
-      const response = await apiClient.get(`/api/words/${id}`, { 
-        signal: abortSignal 
-      });
-      return response.data;
-    },
-    `/api/words/${id}`,
-    'GET'
-  );
+  const response = await apiClient.get(`/api/words/${id}`);
+  return response.data;
 };
 
 export const createWord = async (data: CreateWordData): Promise<Word> => {
-  return await requestManager.executeRequest(
-    async (abortSignal) => {
-      const response = await apiClient.post('/api/words', data, { 
-        signal: abortSignal 
-      });
-      return response.data;
-    },
-    '/api/words',
-    'POST',
-    data
-  );
+  const response = await apiClient.post('/api/words', data);
+  return response.data;
 };
 
 export const updateWord = async (id: number, data: Partial<CreateWordData>): Promise<Word> => {
-  return await requestManager.executeRequest(
-    async (abortSignal) => {
-      const response = await apiClient.put(`/api/words/${id}`, data, { 
-        signal: abortSignal 
-      });
-      return response.data;
-    },
-    `/api/words/${id}`,
-    'PUT',
-    data
-  );
+  const response = await apiClient.put(`/api/words/${id}`, data);
+  return response.data;
 };
 
 export const deleteWord = async (id: number): Promise<void> => {
-  await requestManager.executeRequest(
-    async (abortSignal) => {
-      await apiClient.delete(`/api/words/${id}`, { 
-        signal: abortSignal 
-      });
-    },
-    `/api/words/${id}`,
-    'DELETE'
-  );
+  await apiClient.delete(`/api/words/${id}`);
 };
 
 export const getWordPractice = async (courseId: number): Promise<Word> => {
-  return await requestManager.executeRequest(
-    async (abortSignal) => {
-      const response = await apiClient.get(`/api/courses/${courseId}/words/practice`, { 
-        signal: abortSignal 
-      });
-      return response.data;
-    },
-    `/api/courses/${courseId}/words/practice`,
-    'GET'
-  );
+  const response = await apiClient.get(`/api/courses/${courseId}/words/practice`);
+  return response.data;
 };
 
 export const submitWordPractice = async (wordId: number, answer: string, isEnglishToChinese: boolean = true): Promise<PracticeResponse> => {
@@ -128,43 +77,18 @@ export const submitWordPractice = async (wordId: number, answer: string, isEngli
     is_english_to_chinese: isEnglishToChinese
   };
   
-  return await requestManager.executeRequest(
-    async (abortSignal) => {
-      const response = await apiClient.post(`/api/words/${wordId}/practice`, data, { 
-        signal: abortSignal 
-      });
-      return response.data;
-    },
-    `/api/words/${wordId}/practice`,
-    'POST',
-    data
-  );
+  const response = await apiClient.post(`/api/words/${wordId}/practice`, data);
+  return response.data;
 };
 
 export const getPracticeResult = async (courseId: number): Promise<PracticeResult> => {
-  return await requestManager.executeRequest(
-    async (abortSignal) => {
-      const response = await apiClient.get(`/api/courses/${courseId}/words/practice/result`, { 
-        signal: abortSignal 
-      });
-      return response.data;
-    },
-    `/api/courses/${courseId}/words/practice/result`,
-    'GET'
-  );
+  const response = await apiClient.get(`/api/courses/${courseId}/words/practice/result`);
+  return response.data;
 };
 
 export const getPracticeProgress = async (courseId: number): Promise<PracticeProgress> => {
-  return await requestManager.executeRequest(
-    async (abortSignal) => {
-      const response = await apiClient.get(`/api/courses/${courseId}/words/practice/progress`, { 
-        signal: abortSignal 
-      });
-      return response.data;
-    },
-    `/api/courses/${courseId}/words/practice/progress`,
-    'GET'
-  );
+  const response = await apiClient.get(`/api/courses/${courseId}/words/practice/progress`);
+  return response.data;
 };
 
 export const resetPracticeProgress = async (courseId: number, reviewIncorrect: boolean = false): Promise<void> => {
@@ -173,17 +97,8 @@ export const resetPracticeProgress = async (courseId: number, reviewIncorrect: b
       review_incorrect: reviewIncorrect
     };
     
-    await requestManager.executeRequest(
-      async (abortSignal) => {
-        const response = await apiClient.post(`/api/courses/${courseId}/words/practice/reset`, data, {
-          signal: abortSignal
-        });
-        return response.data;
-      },
-      `/api/courses/${courseId}/words/practice/reset`,
-      'POST',
-      data
-    );
+    const response = await apiClient.post(`/api/courses/${courseId}/words/practice/reset`, data);
+    return response.data;
   } catch (error) {
     console.error('重置进度失败:', error);
     throw error;

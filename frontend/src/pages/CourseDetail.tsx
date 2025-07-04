@@ -10,8 +10,8 @@ import TextPractice from '../components/Practice/TextPractice';
 import { getWords } from '../services/wordService';
 import { Course } from '../services/courseService';
 import { Word } from '../services/wordService';
-import { requestManager } from '../services/requestManager';
-import { REQUEST_MANAGER_CONFIG } from '../config';
+
+
 
 const { TabPane } = Tabs;
 const { Text } = Typography;
@@ -36,15 +36,7 @@ const CourseDetail: React.FC = () => {
   // 稳定的courseId值，避免每次渲染时重新计算
   const courseId = useMemo(() => Number(id), [id]);
 
-  // 定时更新调试信息
-  useEffect(() => {
-    if (REQUEST_MANAGER_CONFIG.enableDebug) {
-      const interval = setInterval(() => {
-        setDebugInfo(requestManager.getDebugInfo());
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, []);
+  // 移除调试信息相关逻辑
 
   const fetchCourse = useCallback(async () => {
     if (fetchingCourse.current) {
@@ -139,36 +131,7 @@ const CourseDetail: React.FC = () => {
     // Implement the delete logic here
   }, []);
 
-  const renderDebugInfo = () => {
-    if (!debugInfo) return null;
-    
-    return (
-      <div style={{ fontSize: '12px', lineHeight: '1.4' }}>
-        <Text strong>正在进行的请求 ({debugInfo.pendingRequests.length}):</Text>
-        <ul>
-          {debugInfo.pendingRequests.map((key: string, index: number) => (
-            <li key={index}>{key}</li>
-          ))}
-        </ul>
-        
-        <Text strong>组件调用次数:</Text>
-        <ul>
-          {debugInfo.componentCallCounts.map(([component, count]: [string, number]) => (
-            <li key={component}>{component}: {count}次</li>
-          ))}
-        </ul>
-        
-        <Text strong>最近调用时间:</Text>
-        <ul>
-          {debugInfo.callTimestamps.map((item: any) => (
-            <li key={item.key}>
-              {item.key.split(':')[1]}: {item.count}次调用, 最后: {new Date(item.lastCall).toLocaleTimeString()}
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  };
+  // 移除调试信息渲染函数
 
   // 分别处理loading状态
   if (courseLoading && !course) {
@@ -185,16 +148,6 @@ const CourseDetail: React.FC = () => {
         title={course.name}
         extra={
           <Space>
-            {REQUEST_MANAGER_CONFIG.enableDebug && (
-              <Badge count={debugInfo?.pendingRequests.length || 0}>
-                <Button 
-                  size="small" 
-                  onClick={() => setDebugDrawerVisible(true)}
-                >
-                  调试
-                </Button>
-              </Badge>
-            )}
             <Button 
               type="primary" 
               onClick={() => navigate(`/courses/${courseId}/edit`)}
@@ -213,15 +166,7 @@ const CourseDetail: React.FC = () => {
         <p>{course.description}</p>
       </Card>
 
-      <Drawer
-        title="RequestManager 调试信息"
-        placement="right"
-        onClose={() => setDebugDrawerVisible(false)}
-        open={debugDrawerVisible}
-        width={400}
-      >
-        {renderDebugInfo()}
-      </Drawer>
+      {/* 移除调试信息抽屉 */}
 
       <Tabs defaultActiveKey="words" style={{ marginTop: 16 }}>
         <TabPane tab="单词列表" key="words">
