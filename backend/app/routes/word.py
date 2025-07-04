@@ -243,9 +243,14 @@ def calculate_next_review_time(consecutive_correct: int) -> datetime:
 @jwt_required()
 def submit_word_practice(word_id):
     current_user_id = int(get_jwt_identity())
+    print(f"DEBUG: submit_word_practice called with word_id={word_id}, user_id={current_user_id}")
+    
     word = Word.query.get_or_404(word_id)
+    print(f"DEBUG: Found word: {word.word}, course_id: {word.course_id}")
     
     data = request.get_json()
+    print(f"DEBUG: Request data: {data}")
+    
     if not data or 'answer' not in data:
         return jsonify({'error': '缺少答案'}), 400
     
@@ -267,11 +272,13 @@ def submit_word_practice(word_id):
     )
     
     try:
+        print(f"DEBUG: Starting database operations")
         # 更新练习进度
         progress = PracticeProgress.query.filter_by(
             user_id=current_user_id,
             course_id=word.course_id
         ).first()
+        print(f"DEBUG: Found existing progress: {progress is not None}")
         
         if not progress:
             progress = PracticeProgress(
@@ -316,6 +323,7 @@ def submit_word_practice(word_id):
         
         review_plan.next_review_time = calculate_next_review_time(review_plan.consecutive_correct)
         
+        print(f"DEBUG: Creating WordPractice with user_id={current_user_id}, word_id={word_id}, course_id={word.course_id}, is_correct={is_correct}")
         practice = WordPractice(
             user_id=current_user_id,
             word_id=word_id,
@@ -324,7 +332,9 @@ def submit_word_practice(word_id):
         )
         db.session.add(practice)
         
+        print(f"DEBUG: About to commit to database")
         db.session.commit()
+        print(f"DEBUG: Database commit successful")
         
         return jsonify({
             'is_correct': is_correct,
@@ -334,7 +344,10 @@ def submit_word_practice(word_id):
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': '保存练习记录失败'}), 500
+        print(f"Error in submit_word_practice: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'保存练习记录失败: {str(e)}'}), 500
 
 @bp.route('/api/courses/<int:course_id>/words/practice/result', methods=['GET'])
 @jwt_required()
