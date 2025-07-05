@@ -5,9 +5,7 @@ import requests
 import logging
 import time
 import uuid
-import jieba
 
-jieba.initialize()  # 预热分词模型，避免首次请求慢
 
 logger = logging.getLogger(__name__)
 

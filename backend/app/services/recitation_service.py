@@ -1,6 +1,7 @@
 from difflib import SequenceMatcher
 import jieba
 import re
+jieba.initialize()  # 预热分词模型，避免首次请求慢
 
 def calculate_similarity(text1: str, text2: str) -> float:
     """
