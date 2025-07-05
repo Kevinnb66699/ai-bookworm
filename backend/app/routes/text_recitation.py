@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.text_recitation import TextRecitation
 from app.services.ocr_service import ocr_service
@@ -50,9 +50,21 @@ def upload_to_oss(local_file_path):
         bucket.put_object(oss_file_name, fileobj)
     return f"https://{OSS_BUCKET_NAME}.oss-cn-shanghai.aliyuncs.com/{oss_file_name}"
 
-@bp.route('/api/text-recitation', methods=['POST'])
-@jwt_required()
+@bp.route('/api/text-recitation', methods=['POST', 'OPTIONS'])
 def create_text_recitation():
+    # 处理 OPTIONS 预检请求
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Max-Age'] = '3600'
+        return response
+    
+    # 对于非 OPTIONS 请求，需要 JWT 验证
+    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+    verify_jwt_in_request()
+    
     try:
         if 'image' not in request.files:
             return jsonify({'error': '没有上传图片'}), 400
@@ -109,9 +121,21 @@ def create_text_recitation():
         logger.error(f"创建文本朗诵记录失败: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/text-recitation', methods=['GET'])
-@jwt_required()
+@bp.route('/api/text-recitation', methods=['GET', 'OPTIONS'])
 def get_text_recitations():
+    # 处理 OPTIONS 预检请求
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Max-Age'] = '3600'
+        return response
+    
+    # 对于非 OPTIONS 请求，需要 JWT 验证
+    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+    verify_jwt_in_request()
+    
     try:
         user_id = get_jwt_identity()
         texts = TextRecitation.query.filter_by(user_id=user_id).order_by(TextRecitation.create_time.desc()).all()
@@ -119,9 +143,21 @@ def get_text_recitations():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/text-recitation/<int:id>', methods=['DELETE'])
-@jwt_required()
+@bp.route('/api/text-recitation/<int:id>', methods=['DELETE', 'OPTIONS'])
 def delete_text_recitation(id):
+    # 处理 OPTIONS 预检请求
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Max-Age'] = '3600'
+        return response
+    
+    # 对于非 OPTIONS 请求，需要 JWT 验证
+    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+    verify_jwt_in_request()
+    
     try:
         user_id = get_jwt_identity()
         text = TextRecitation.query.filter_by(id=id, user_id=user_id).first()
@@ -137,9 +173,21 @@ def delete_text_recitation(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/text-recitation/<int:id>', methods=['PUT'])
-@jwt_required()
+@bp.route('/api/text-recitation/<int:id>', methods=['PUT', 'OPTIONS'])
 def update_text_recitation(id):
+    # 处理 OPTIONS 预检请求
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Max-Age'] = '3600'
+        return response
+    
+    # 对于非 OPTIONS 请求，需要 JWT 验证
+    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+    verify_jwt_in_request()
+    
     try:
         user_id = get_jwt_identity()
         text = TextRecitation.query.filter_by(id=id, user_id=user_id).first()
@@ -159,9 +207,21 @@ def update_text_recitation(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/text-recitation/<int:id>/recite', methods=['POST'])
-@jwt_required()
+@bp.route('/api/text-recitation/<int:id>/recite', methods=['POST', 'OPTIONS'])
 def recite_text(id):
+    # 处理 OPTIONS 预检请求
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Max-Age'] = '3600'
+        return response
+    
+    # 对于非 OPTIONS 请求，需要 JWT 验证
+    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+    verify_jwt_in_request()
+    
     try:
         logger.info(f"开始处理朗诵请求，ID: {id}")
         user_id = get_jwt_identity()
