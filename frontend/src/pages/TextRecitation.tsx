@@ -3,93 +3,12 @@ import { Card, Button, Upload, message, List, Typography, Space, Modal, Input, P
 import { CameraOutlined, DeleteOutlined, EditOutlined, AudioOutlined, LoadingOutlined, BarChartOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { textRecitationService, TextRecitation as TextRecitationType, RecitationResult } from '../services/textRecitationService';
-import { useAuth } from '../context/AuthContext';
+import { request } from '../services/request';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
-interface AudioRecorderProps {
-  onRecordingComplete: (audioBlob: Blob) => void;
-  isRecording: boolean;
-  setIsRecording: (recording: boolean) => void;
-}
-
-const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete, isRecording, setIsRecording }) => {
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-
-  useEffect(() => {
-    const initRecorder = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream);
-        
-        recorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            setAudioChunks(prev => [...prev, event.data]);
-          }
-        };
-        
-        recorder.onstop = () => {
-          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-          onRecordingComplete(audioBlob);
-          setAudioChunks([]);
-        };
-        
-        setMediaRecorder(recorder);
-      } catch (error) {
-        console.error('获取麦克风权限失败:', error);
-      }
-    };
-
-    initRecorder();
-  }, [audioChunks, onRecordingComplete]);
-
-  const startRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === 'inactive') {
-      setAudioChunks([]);
-      mediaRecorder.start();
-      setIsRecording(true);
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-      setIsRecording(false);
-    }
-  };
-
-  return (
-    <div className="audio-recorder">
-      <button 
-        onClick={isRecording ? stopRecording : startRecording}
-        className={`record-button ${isRecording ? 'recording' : ''}`}
-      >
-        {isRecording ? '停止录音' : '开始录音'}
-      </button>
-    </div>
-  );
-};
-
 const TextRecitation: React.FC = () => {
-  // 认证状态检查
-  const { user, isLoggedIn, loading: authLoading } = useAuth();
-  const [authStatus, setAuthStatus] = useState<string>('检查中...');
-  
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (authLoading) {
-      setAuthStatus('认证检查中...');
-    } else if (!isLoggedIn) {
-      setAuthStatus('未登录 - 请先登录');
-    } else if (!token) {
-      setAuthStatus('Token缺失 - 请重新登录');
-    } else {
-      setAuthStatus(`已登录 - 用户: ${user?.username || '未知'}`);
-    }
-  }, [user, isLoggedIn, authLoading]);
-
   const [textList, setTextList] = useState<TextRecitationType[]>([]);
   const [loading, setLoading] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -372,8 +291,8 @@ const TextRecitation: React.FC = () => {
   // 获取成绩历史
   const fetchScores = async (id: number) => {
     try {
-      const data = await textRecitationService.getScores(id);
-      setScores(data);
+      const response = await request.get(`/api/text-recitation/${id}/scores`);
+      setScores(response.data);
       setScoresModalVisible(true);
     } catch (error) {
       message.error('获取成绩历史失败');
@@ -382,24 +301,6 @@ const TextRecitation: React.FC = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* 认证状态显示 */}
-      <Card style={{ marginBottom: '16px' }}>
-        <Space>
-          <Text strong>认证状态：</Text>
-          <Text style={{ 
-            color: isLoggedIn ? '#52c41a' : '#ff4d4f',
-            fontWeight: 'bold'
-          }}>
-            {authStatus}
-          </Text>
-          {!isLoggedIn && (
-            <Button type="link" onClick={() => window.location.href = '/login'}>
-              前往登录
-            </Button>
-          )}
-        </Space>
-      </Card>
-
       <Title level={2}>课文背诵</Title>
       <Card style={{ marginBottom: '24px' }}>
         <Space direction="vertical" style={{ width: '100%' }}>
@@ -409,14 +310,12 @@ const TextRecitation: React.FC = () => {
             showUploadList={false}
             customRequest={handleUpload}
             capture="environment"
-            disabled={!isLoggedIn}
           >
             <Button
               type="primary"
               icon={<CameraOutlined />}
               loading={loading}
               size="large"
-              disabled={!isLoggedIn}
             >
               拍照上传课文
             </Button>
