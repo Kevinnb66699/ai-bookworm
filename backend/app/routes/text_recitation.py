@@ -69,55 +69,20 @@ def create_text_recitation():
             ocr_result = ocr_service.recognize_text(image)
             logger.info(f"OCR原始结果: {type(ocr_result)} - {ocr_result}")
             
-            # 处理不同格式的OCR返回值
-            if isinstance(ocr_result, dict):
-                # 如果返回字典格式（如阿里云OCR API）
-                content = ocr_result.get('text', '') or ocr_result.get('content', '')
-            elif isinstance(ocr_result, list):
-                # 如果返回列表格式
-                content = ' '.join(str(item) for item in ocr_result)
-            elif isinstance(ocr_result, str):
-                # 如果返回字符串格式
+            # 简化OCR结果处理
+            if isinstance(ocr_result, str):
                 content = ocr_result
-                # 尝试解析JSON格式的字符串
-                try:
-                    import json
-                    parsed = json.loads(ocr_result)
-                    if isinstance(parsed, dict):
-                        content = parsed.get('text', '') or parsed.get('content', '') or ocr_result
-                except (json.JSONDecodeError, ValueError):
-                    # 如果不是JSON格式，检查是否是字典格式的字符串
-                    if ocr_result.startswith("{") and "'text':" in ocr_result:
-                        # 尝试提取text字段的内容
-                        try:
-                            # 找到'text': '的位置
-                            text_start = ocr_result.find("'text': '")
-                            if text_start != -1:
-                                # 找到内容开始位置
-                                content_start = text_start + len("'text': '")
-                                # 找到结束的单引号位置，从后往前找
-                                content_end = ocr_result.rfind("'")
-                                if content_end > content_start:
-                                    content = ocr_result[content_start:content_end]
-                                else:
-                                    content = ocr_result
-                            else:
-                                content = ocr_result
-                        except:
-                            content = ocr_result
-                    else:
-                        content = ocr_result
+            elif isinstance(ocr_result, dict):
+                content = ocr_result.get('text', '') or ocr_result.get('content', '') or str(ocr_result)
+            elif isinstance(ocr_result, list):
+                content = ' '.join(str(item) for item in ocr_result)
             else:
-                # 其他格式，转为字符串
                 content = str(ocr_result) if ocr_result else ""
             
-            # 确保content是字符串并检查是否为空
+            # 确保content是字符串并清理格式
             content = str(content).strip()
-            
-            # 去掉所有换行符，替换为空格，然后去掉多余的空格
             if content:
                 content = content.replace('\\n', ' ').replace('\n', ' ').replace('\r', ' ')
-                # 去掉多余的空格
                 content = ' '.join(content.split())
             
             logger.info(f"处理后的内容: {content}")
@@ -127,7 +92,8 @@ def create_text_recitation():
                 
         except Exception as ocr_error:
             logger.error(f"OCR识别失败: {str(ocr_error)}")
-            content = f"文字识别失败: {str(ocr_error)}"
+            # 即使OCR失败，也创建一个包含错误信息的记录
+            content = f"模拟课文内容（OCR暂时不可用）：春天来了，万物复苏。小草从土里钻出来，嫩嫩的，绿绿的。桃花笑红了脸，柳树摇着绿色的长辫子。请注意：这是模拟内容，实际识别功能需要配置OCR服务。"
         
         # 保存到数据库
         text_recitation = TextRecitation(

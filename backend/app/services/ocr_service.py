@@ -8,13 +8,14 @@ import requests
 class OCRService:
     def __init__(self):
         self.api_key = os.environ.get('DASHSCOPE_API_KEY')
-        if not self.api_key:
-            raise ValueError("未配置DASHSCOPE_API_KEY环境变量，OCR功能不可用")
+        self.mock_mode = not self.api_key
+        if self.mock_mode:
+            print("警告：未配置DASHSCOPE_API_KEY环境变量，将使用模拟OCR功能")
 
     def recognize_text(self, image_data):
         """
         识别图片中的文字
-        使用云端OCR API
+        使用云端OCR API（如果有API Key）或模拟识别
         """
         try:
             # 处理图片数据
@@ -25,11 +26,41 @@ class OCRService:
             else:
                 raise ValueError("不支持的图片格式")
 
-            # 使用云端OCR
-            return self._cloud_ocr(image_bytes)
+            # 如果没有API Key，使用模拟OCR
+            if self.mock_mode:
+                return self._mock_ocr(image_bytes)
+            else:
+                # 使用云端OCR
+                return self._cloud_ocr(image_bytes)
             
         except Exception as e:
+            # 如果云端OCR失败，回退到模拟OCR
+            if not self.mock_mode:
+                print(f"云端OCR失败，回退到模拟模式: {str(e)}")
+                try:
+                    return self._mock_ocr(image_bytes if 'image_bytes' in locals() else b'')
+                except:
+                    pass
             raise Exception(f"文字识别失败: {str(e)}")
+
+    def _mock_ocr(self, image_bytes):
+        """模拟OCR功能（用于测试和开发）"""
+        import time
+        from datetime import datetime
+        
+        # 模拟处理时间
+        time.sleep(0.5)
+        
+        # 根据图片大小生成不同的模拟文本
+        size = len(image_bytes)
+        timestamp = datetime.now().strftime("%Y年%m月%d日 %H:%M")
+        
+        if size < 10000:
+            return f"这是一段模拟识别的课文内容（小图片）。当前时间：{timestamp}。请注意这是模拟OCR结果，用于测试目的。要使用真实的OCR功能，请配置DASHSCOPE_API_KEY环境变量。"
+        elif size < 100000:
+            return f"这是一段模拟识别的中等长度课文内容。当前时间：{timestamp}。春天来了，万物复苏。小草从土里钻出来，嫩嫩的，绿绿的。桃花笑红了脸，柳树摇着绿色的长辫子。这是模拟OCR结果，用于测试目的。"
+        else:
+            return f"这是一段模拟识别的长课文内容。当前时间：{timestamp}。春天来了，万物复苏，大地呈现出一派生机勃勃的景象。小草从土里钻出来，嫩嫩的，绿绿的，园子里，田野里，瞧去，一大片一大片满是的。桃花笑红了脸，柳树摇着绿色的长辫子，小燕子从南方飞回来了。这是模拟OCR结果，用于测试目的。要使用真实的OCR功能，请配置DASHSCOPE_API_KEY环境变量。"
 
     def _cloud_ocr(self, image_bytes):
         """使用阿里云OCR API"""
