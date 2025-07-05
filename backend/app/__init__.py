@@ -115,7 +115,7 @@ def create_app():
         from flask import jsonify
         response = jsonify({
             'error': '上传文件过大',
-            'message': '请选择小于16MB的图片文件'
+            'message': '请选择小于1MB的图片文件'
         })
         response.status_code = 413
         # 确保错误响应也包含CORS头部

@@ -338,5 +338,5 @@ def health_check():
         'status': 'ok',
         'message': '课文背诵服务运行正常',
         'ocr_available': bool(os.environ.get('DASHSCOPE_API_KEY')),
-        'upload_limit': '16MB'
+        'upload_limit': '1MB'
     }), 200 
