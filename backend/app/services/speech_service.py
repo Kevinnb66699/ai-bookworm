@@ -171,6 +171,7 @@ class SpeechService:
     def _aliyun_nls_recognize(self, audio_data):
         """使用阿里云智能语音交互API"""
         try:
+            # 动态导入阿里云NLS SDK，避免模块加载时的导入错误
             from alibabacloud_nls_filetrans20180817.client import Client as NlsClient
             from alibabacloud_tea_openapi import models as open_api_models
             from alibabacloud_nls_filetrans20180817 import models as nls_models

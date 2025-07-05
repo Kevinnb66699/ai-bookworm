@@ -20,9 +20,10 @@ vosk==0.3.45
 dashscope==1.14.1
 oss2==2.18.1
 requests==2.31.0
-# 阿里云NLS SDK（可选）
-alibabacloud-nls-filetrans20180817==1.0.0
-alibabacloud-tea-openapi==0.3.7
-aliyun-python-sdk-core>=2.13.36
-aliyun-python-sdk-nls-cloud-meta>=1.0.0
+# 阿里云NLS SDK（可选）- 暂时注释掉以修复Vercel部署
+# alibabacloud-nls-filetrans20180817==1.0.0
+# alibabacloud-tea-openapi==0.3.7
+# aliyun-python-sdk-core>=2.13.36
+# aliyun-python-sdk-nls-cloud-meta>=1.0.0
+# 阿里云OCR API保留（已验证可用）
 alibabacloud-ocr-api20210707>=1.0.0 
