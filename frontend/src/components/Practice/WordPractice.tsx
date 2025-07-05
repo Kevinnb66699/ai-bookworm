@@ -299,14 +299,14 @@ const WordPractice: React.FC<WordPracticeProps> = ({ courseId }) => {
                 {isEnglishToChinese ? currentWord.word : (Array.isArray(currentWord.meanings) ? currentWord.meanings : []).join('、')}
               </div>
               <Input.Group compact>
-                <Input
-                  ref={inputRef}
-                  value={userAnswer}
-                  onChange={(e) => setUserAnswer(e.target.value)}
-                  placeholder={isEnglishToChinese ? '请输入中文含义' : '请输入英文单词'}
-                  onPressEnter={handleSubmit}
-                  disabled={loading || isCorrect !== null}
-                  autoFocus
+              <Input
+                ref={inputRef}
+                value={userAnswer}
+                onChange={(e) => setUserAnswer(e.target.value)}
+                placeholder={isEnglishToChinese ? '请输入中文含义' : '请输入英文单词'}
+                onPressEnter={handleSubmit}
+                disabled={loading || isCorrect !== null}
+                autoFocus
                   style={{ width: 'calc(100% - 80px)' }}
                 />
                 <Button

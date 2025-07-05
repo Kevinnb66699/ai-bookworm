@@ -12,6 +12,8 @@ import wave
 from app.models.practice import Practice
 import oss2
 import uuid
+import json
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +60,74 @@ def create_text_recitation():
         image = request.files['image']
         user_id = get_jwt_identity()
         
+        # 检查图片文件
+        if image.filename == '':
+            return jsonify({'error': '没有选择图片文件'}), 400
+        
         # 识别文字
-        content = ocr_service.recognize_text(image)
+        try:
+            ocr_result = ocr_service.recognize_text(image)
+            logger.info(f"OCR原始结果: {type(ocr_result)} - {ocr_result}")
+            
+            # 处理不同格式的OCR返回值
+            if isinstance(ocr_result, dict):
+                # 如果返回字典格式（如阿里云OCR API）
+                content = ocr_result.get('text', '') or ocr_result.get('content', '')
+            elif isinstance(ocr_result, list):
+                # 如果返回列表格式
+                content = ' '.join(str(item) for item in ocr_result)
+            elif isinstance(ocr_result, str):
+                # 如果返回字符串格式
+                content = ocr_result
+                # 尝试解析JSON格式的字符串
+                try:
+                    import json
+                    parsed = json.loads(ocr_result)
+                    if isinstance(parsed, dict):
+                        content = parsed.get('text', '') or parsed.get('content', '') or ocr_result
+                except (json.JSONDecodeError, ValueError):
+                    # 如果不是JSON格式，检查是否是字典格式的字符串
+                    if ocr_result.startswith("{") and "'text':" in ocr_result:
+                        # 尝试提取text字段的内容
+                        try:
+                            # 找到'text': '的位置
+                            text_start = ocr_result.find("'text': '")
+                            if text_start != -1:
+                                # 找到内容开始位置
+                                content_start = text_start + len("'text': '")
+                                # 找到结束的单引号位置，从后往前找
+                                content_end = ocr_result.rfind("'")
+                                if content_end > content_start:
+                                    content = ocr_result[content_start:content_end]
+                                else:
+                                    content = ocr_result
+                            else:
+                                content = ocr_result
+                        except:
+                            content = ocr_result
+                    else:
+                        content = ocr_result
+            else:
+                # 其他格式，转为字符串
+                content = str(ocr_result) if ocr_result else ""
+            
+            # 确保content是字符串并检查是否为空
+            content = str(content).strip()
+            
+            # 去掉所有换行符，替换为空格，然后去掉多余的空格
+            if content:
+                content = content.replace('\\n', ' ').replace('\n', ' ').replace('\r', ' ')
+                # 去掉多余的空格
+                content = ' '.join(content.split())
+            
+            logger.info(f"处理后的内容: {content}")
+            
+            if not content:
+                content = "未能识别到文字内容，请重新上传图片"
+                
+        except Exception as ocr_error:
+            logger.error(f"OCR识别失败: {str(ocr_error)}")
+            content = f"文字识别失败: {str(ocr_error)}"
         
         # 保存到数据库
         text_recitation = TextRecitation(
@@ -72,6 +140,7 @@ def create_text_recitation():
         return jsonify(text_recitation.to_dict()), 201
     except Exception as e:
         db.session.rollback()
+        logger.error(f"创建文本朗诵记录失败: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/text-recitation', methods=['GET'])
@@ -155,10 +224,29 @@ def recite_text(id):
             # 直接本地识别
             recited_text = speech_service.recognize(temp_path)
             logger.info(f"识别结果: {recited_text}")
+            
+            # 确保识别结果不为None
+            if recited_text is None:
+                recited_text = "语音识别失败，无法获取识别结果"
+                logger.warning("语音识别返回None")
+            
+            # 检查识别结果是否为空或无效
+            if not recited_text or recited_text.strip() == "":
+                recited_text = "未能识别到语音内容"
+                logger.warning("语音识别返回空字符串")
+            
+            logger.info(f"最终识别文本: {recited_text}")
+            logger.info(f"原文内容: {text.content}")
+            
             # 3. 计算相似度和评分
             similarity = calculate_similarity(text.content, recited_text)
             score = int(similarity * 100)
             logger.info(f"相似度: {similarity}, 得分: {score}")
+            
+            # 如果得分为0，但识别到了内容，给出提示
+            if score == 0 and recited_text not in ["未能识别到语音内容", "语音识别失败，无法获取识别结果"]:
+                logger.info(f"得分为0但识别到内容，可能是内容不匹配")
+            
             return jsonify({
                 'recited_text': recited_text,
                 'original_text': text.content,
@@ -167,7 +255,13 @@ def recite_text(id):
             }), 200
         except Exception as e:
             logger.error(f"语音识别或评分过程中发生错误: {str(e)}", exc_info=True)
-            return jsonify({'error': str(e)}), 500
+            return jsonify({
+                'error': '语音识别失败',
+                'recited_text': '语音识别过程中发生错误',
+                'original_text': text.content,
+                'score': 0,
+                'similarity': 0.0
+            }), 200
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)

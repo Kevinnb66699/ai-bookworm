@@ -8,45 +8,25 @@ import requests
 class OCRService:
     def __init__(self):
         self.api_key = os.environ.get('DASHSCOPE_API_KEY')
-        self.use_cloud_ocr = bool(self.api_key)  # 如果有API Key就使用云端OCR
-        
-        # 本地OCR配置（仅开发环境）
-        if not self.use_cloud_ocr:
-            try:
-                import pytesseract
-                # 尝试设置Tesseract路径
-                if os.name == 'nt':  # Windows
-                    pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract OCR\tesseract.exe'
-                self.pytesseract = pytesseract
-            except ImportError:
-                print("警告：pytesseract未安装，OCR功能将不可用")
-                self.pytesseract = None
+        if not self.api_key:
+            raise ValueError("未配置DASHSCOPE_API_KEY环境变量，OCR功能不可用")
 
     def recognize_text(self, image_data):
         """
         识别图片中的文字
-        优先使用云端OCR API，失败时回退到本地OCR
+        使用云端OCR API
         """
         try:
             # 处理图片数据
             if hasattr(image_data, 'read'):
                 image_bytes = image_data.read()
-                image = Image.open(io.BytesIO(image_bytes))
             elif isinstance(image_data, bytes):
                 image_bytes = image_data
-                image = Image.open(io.BytesIO(image_bytes))
             else:
                 raise ValueError("不支持的图片格式")
 
-            # 优先使用云端OCR
-            if self.use_cloud_ocr:
-                try:
-                    return self._cloud_ocr(image_bytes)
-                except Exception as e:
-                    print(f"云端OCR失败，尝试本地OCR: {str(e)}")
-            
-            # 回退到本地OCR
-            return self._local_ocr(image)
+            # 使用云端OCR
+            return self._cloud_ocr(image_bytes)
             
         except Exception as e:
             raise Exception(f"文字识别失败: {str(e)}")
@@ -78,7 +58,7 @@ class OCRService:
                                 "image": f"data:image/jpeg;base64,{image_base64}"
                             },
                             {
-                                "text": "请识别图片中的所有文字内容，保持原有的格式和换行。"
+                                "text": "请识别图片中的所有文字内容，将所有文字连接成一段连贯的文本。"
                             }
                         ]
                     }
@@ -92,27 +72,29 @@ class OCRService:
             result = response.json()
             if 'output' in result and 'choices' in result['output']:
                 text = result['output']['choices'][0]['message']['content']
+                
+                # 处理不同格式的返回值
+                if isinstance(text, list):
+                    # 如果是列表，合并为字符串
+                    text = ' '.join(str(item) for item in text)
+                elif text is None:
+                    text = ""
+                else:
+                    # 确保是字符串
+                    text = str(text)
+                
+                # 去掉所有换行符，替换为空格，然后去掉多余的空格
+                if text:
+                    text = text.replace('\n', ' ').replace('\r', ' ')
+                    # 去掉多余的空格
+                    text = ' '.join(text.split())
+                
                 return text.strip() if text else "未识别到文字"
             else:
                 raise Exception("API响应格式错误")
         else:
             raise Exception(f"API调用失败: {response.status_code}")
 
-    def _local_ocr(self, image):
-        """本地OCR识别（开发环境备用）"""
-        if not self.pytesseract:
-            raise Exception("本地OCR不可用：pytesseract未安装")
-        
-        try:
-            # 使用中文和英文语言包
-            text = self.pytesseract.image_to_string(image, lang='chi_sim+eng')
-            text = text.strip()
-            
-            if not text:
-                raise Exception("未能识别出文字")
-                
-            return text
-        except Exception as e:
-            raise Exception(f"本地OCR失败: {str(e)}")
+
 
 ocr_service = OCRService() 

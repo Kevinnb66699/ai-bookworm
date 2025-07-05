@@ -81,7 +81,7 @@ def create_app():
     jwt.init_app(app)
     
     # 导入模型
-    from .models import User, Course, Word, Text
+    from .models import User, Course, Word, Text, TextRecitation
     
     # 强制CORS配置 - 确保100%有效
     @app.after_request

@@ -161,6 +161,12 @@ const TextRecitation: React.FC = () => {
   // 开始录音
   const startRecording = async (id: number) => {
     try {
+      // 确保清理之前的状态
+      if (mediaRecorder.current) {
+        mediaRecorder.current = null;
+      }
+      audioChunks.current = [];
+      
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1, // 单声道
@@ -170,16 +176,44 @@ const TextRecitation: React.FC = () => {
       });
       
       mediaRecorder.current = new MediaRecorder(stream);
-      audioChunks.current = [];
-
+      
       mediaRecorder.current.ondataavailable = (event) => {
-        audioChunks.current.push(event.data);
+        if (event.data.size > 0) {
+          audioChunks.current.push(event.data);
+        }
       };
 
       mediaRecorder.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
-        const wavBlob = await convertToWav(audioBlob);
-        await submitRecitation(wavBlob);
+        try {
+          console.log('录音停止，音频块数量:', audioChunks.current.length);
+          if (audioChunks.current.length === 0) {
+            console.error('没有录音数据');
+            message.error('没有录音数据，请重试');
+            setCurrentRecitationId(null);
+            return;
+          }
+          
+          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+          console.log('音频Blob大小:', audioBlob.size);
+          
+          const wavBlob = await convertToWav(audioBlob);
+          console.log('WAV Blob大小:', wavBlob.size);
+          
+          // 直接传递id参数，避免依赖异步状态更新
+          await submitRecitation(wavBlob, id);
+        } catch (error) {
+          console.error('处理录音数据失败:', error);
+          message.error('处理录音失败，请重试');
+          setReciting(false);
+          setCurrentRecitationId(null);
+        }
+      };
+
+      mediaRecorder.current.onerror = (event) => {
+        console.error('录音错误:', event);
+        message.error('录音过程中出现错误');
+        setRecording(false);
+        setCurrentRecitationId(null);
       };
 
       mediaRecorder.current.start();
@@ -187,7 +221,10 @@ const TextRecitation: React.FC = () => {
       setCurrentRecitationId(id);
       message.success('开始录音');
     } catch (error) {
+      console.error('启动录音失败:', error);
       message.error('无法访问麦克风');
+      setRecording(false);
+      setCurrentRecitationId(null);
     }
   };
 
@@ -196,30 +233,59 @@ const TextRecitation: React.FC = () => {
     if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
       mediaRecorder.current.stop();
       setRecording(false);
-      mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
+      // 清理媒体流
+      if (mediaRecorder.current.stream) {
+        mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
+      }
     }
   };
 
-  // 提交背诵
-  const submitRecitation = async (audioBlob: Blob) => {
-    if (!currentRecitationId) return;
+  // 提交背诵 - 添加可选的id参数
+  const submitRecitation = async (audioBlob: Blob, recitationId?: number) => {
+    const targetId = recitationId || currentRecitationId;
+    
+    if (!targetId) {
+      console.error('没有当前背诵ID');
+      return;
+    }
     
     try {
       setReciting(true);
-      const result = await textRecitationService.submitRecitation(currentRecitationId, audioBlob);
+      console.log('开始提交背诵，ID:', targetId);
+      
+      // 显示处理中的提示
+      const hideLoading = message.loading('正在处理您的背诵，请稍候...', 0);
+      
+      const result = await textRecitationService.submitRecitation(targetId, audioBlob);
+      
+      // 隐藏加载提示
+      hideLoading();
+      
       setRecitationResult(result);
-      message.success(`背诵评分：${result.score}分`);
+      
+      // 根据得分给出不同的反馈
+      if (result.score >= 80) {
+        message.success(`背诵评分：${result.score}分 - 太棒了！`);
+      } else if (result.score >= 60) {
+        message.success(`背诵评分：${result.score}分 - 不错哦！`);
+      } else {
+        message.info(`背诵评分：${result.score}分 - 继续努力！`);
+      }
+      
     } catch (error) {
-      message.error('提交背诵失败');
+      console.error('提交背诵失败:', error);
+      message.error('提交背诵失败，请重试');
     } finally {
       setReciting(false);
+      // 确保清理当前背诵ID，无论成功还是失败
+      setCurrentRecitationId(null);
     }
   };
 
   // 关闭结果对话框
   const handleResultClose = () => {
     setRecitationResult(null);
-    setCurrentRecitationId(null);
+    // currentRecitationId 已经在 submitRecitation 中清理了，这里不需要重复清理
   };
 
   // 获取成绩历史
@@ -270,8 +336,19 @@ const TextRecitation: React.FC = () => {
                   danger
                   icon={<LoadingOutlined />}
                   onClick={stopRecording}
+                  size="large"
                 >
                   停止录音
+                </Button>
+              ) : reciting && currentRecitationId === item.id ? (
+                <Button
+                  type="primary"
+                  icon={<LoadingOutlined />}
+                  loading={true}
+                  disabled={true}
+                  size="large"
+                >
+                  正在处理...
                 </Button>
               ) : (
                 <>
@@ -279,7 +356,8 @@ const TextRecitation: React.FC = () => {
                     type="primary"
                     icon={<AudioOutlined />}
                     onClick={() => startRecording(item.id)}
-                    disabled={recording}
+                    disabled={recording || reciting}
+                    size="large"
                   >
                     开始背诵
                   </Button>
@@ -357,11 +435,30 @@ const TextRecitation: React.FC = () => {
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             <div>
               <Title level={5}>得分</Title>
-              <Progress
-                type="circle"
-                percent={recitationResult.score}
-                status={recitationResult.score >= 80 ? 'success' : 'normal'}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                <Progress
+                  type="circle"
+                  percent={recitationResult.score}
+                  status={recitationResult.score >= 80 ? 'success' : 'normal'}
+                />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    fontSize: '48px', 
+                    fontWeight: 'bold', 
+                    color: recitationResult.score >= 80 ? '#52c41a' : recitationResult.score >= 60 ? '#faad14' : '#ff4d4f',
+                    lineHeight: 1
+                  }}>
+                    {recitationResult.score}
+                  </div>
+                  <div style={{ 
+                    fontSize: '16px', 
+                    color: '#666',
+                    marginTop: '4px'
+                  }}>
+                    分
+                  </div>
+                </div>
+              </div>
             </div>
             <div>
               <Title level={5}>原文</Title>

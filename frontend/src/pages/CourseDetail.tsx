@@ -122,8 +122,8 @@ const CourseDetail: React.FC = () => {
               cancelText="取消"
             >
               <Button danger>
-                删除课程
-              </Button>
+              删除课程
+            </Button>
             </Popconfirm>
           </Space>
         }
