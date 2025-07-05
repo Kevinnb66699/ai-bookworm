@@ -35,27 +35,7 @@ class SpeechService:
             
             logger.info(f"开始语音识别，音频文件大小: {len(audio_data)} bytes")
             
-            # 方法1：使用DashScope语音识别API
-            if self.api_key:
-                try:
-                    result = self._dashscope_recognize(audio_data)
-                    if result and result.strip():
-                        logger.info(f"DashScope识别成功: {result}")
-                        return self._extract_final_text(result)
-                except Exception as e:
-                    logger.warning(f"DashScope识别失败: {str(e)}")
-            
-            # 方法2：使用阿里云智能语音交互API
-            if self.access_key_id and self.access_key_secret:
-                try:
-                    result = self._aliyun_nls_recognize(audio_data)
-                    if result and result.strip():
-                        logger.info(f"阿里云NLS识别成功: {result}")
-                        return self._extract_final_text(result)
-                except Exception as e:
-                    logger.warning(f"阿里云NLS识别失败: {str(e)}")
-            
-            # 方法3：使用DashScope多模态API（作为备选）
+            # 方法1：使用DashScope多模态API（作为备选）
             if self.api_key:
                 try:
                     result = self._dashscope_multimodal_recognize(audio_data)
@@ -67,6 +47,28 @@ class SpeechService:
                         return final_text
                 except Exception as e:
                     logger.warning(f"DashScope多模态识别失败: {str(e)}")
+            # 方法2：使用DashScope语音识别API
+            elif self.api_key:
+                try:
+                    result = self._dashscope_recognize(audio_data)
+                    if result and result.strip():
+                        logger.info(f"DashScope识别成功: {result}")
+                        return self._extract_final_text(result)
+                except Exception as e:
+                    logger.warning(f"DashScope识别失败: {str(e)}")
+            
+            # 方法3：使用阿里云智能语音交互API
+            elif self.access_key_id and self.access_key_secret:
+                try:
+                    result = self._aliyun_nls_recognize(audio_data)
+                    if result and result.strip():
+                        logger.info(f"阿里云NLS识别成功: {result}")
+                        return self._extract_final_text(result)
+                except Exception as e:
+                    logger.warning(f"阿里云NLS识别失败: {str(e)}")
+            else:
+                pass
+            
             
             # 如果所有方法都失败，返回提示
             return "语音识别服务暂时不可用，请检查API配置或稍后重试"
