@@ -3,9 +3,7 @@ import { Card, Button, Upload, message, List, Typography, Space, Modal, Input, P
 import { CameraOutlined, DeleteOutlined, EditOutlined, AudioOutlined, LoadingOutlined, BarChartOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { textRecitationService, TextRecitation as TextRecitationType, RecitationResult } from '../services/textRecitationService';
-import { request } from '../services/request';
 import { useAuth } from '../context/AuthContext';
-import './TextRecitation.css';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -374,8 +372,8 @@ const TextRecitation: React.FC = () => {
   // 获取成绩历史
   const fetchScores = async (id: number) => {
     try {
-      const response = await request.get(`/api/text-recitation/${id}/scores`);
-      setScores(response.data);
+      const data = await textRecitationService.getScores(id);
+      setScores(data);
       setScoresModalVisible(true);
     } catch (error) {
       message.error('获取成绩历史失败');

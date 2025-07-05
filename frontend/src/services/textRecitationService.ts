@@ -94,4 +94,14 @@ export const textRecitationService = {
     });
     return response.data;
   },
+
+  // 获取成绩历史
+  getScores: async (id: number): Promise<{
+    current_score: number | null;
+    best_score: number | null;
+    history: Array<{ score: number; date: string }>;
+  }> => {
+    const response = await api.get(`/api/text-recitation/${id}/scores`);
+    return response.data;
+  },
 }; 
