@@ -18,10 +18,6 @@ def create_app():
     # 打印数据库连接信息
     print(f"Connecting to database: {app.config['SQLALCHEMY_DATABASE_URI']}")
     
-    # 确保上传文件夹存在
-    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    
     # 配置CORS - 支持多种URL格式
     allowed_origins = [
         "http://localhost:3000",
@@ -108,21 +104,6 @@ def create_app():
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
             response.headers['Access-Control-Max-Age'] = '3600'
             return response
-    
-    # 添加文件上传错误处理器
-    @app.errorhandler(413)
-    def request_entity_too_large(error):
-        from flask import jsonify
-        response = jsonify({
-            'error': '上传文件过大',
-            'message': '请选择小于1MB的图片文件'
-        })
-        response.status_code = 413
-        # 确保错误响应也包含CORS头部
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        return response
 
     # 注册蓝图
     from .routes import auth, course, word, review, text_recitation, reminder, text

@@ -64,11 +64,6 @@ def create_text_recitation():
         if image.filename == '':
             return jsonify({'error': '没有选择图片文件'}), 400
         
-        # 检查文件类型
-        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'tiff'}
-        if not ('.' in image.filename and image.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
-            return jsonify({'error': '不支持的图片格式，请上传 PNG、JPG、JPEG、GIF、BMP、WebP 或 TIFF 格式的图片'}), 400
-        
         # 识别文字
         try:
             ocr_result = ocr_service.recognize_text(image)
@@ -146,13 +141,7 @@ def create_text_recitation():
     except Exception as e:
         db.session.rollback()
         logger.error(f"创建文本朗诵记录失败: {str(e)}")
-        response = jsonify({'error': str(e)})
-        response.status_code = 500
-        # 确保错误响应也包含CORS头部
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        return response
+        return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/text-recitation', methods=['GET'])
 @jwt_required()
@@ -328,15 +317,4 @@ def get_recitation_scores(id):
         })
     except Exception as e:
         logger.error(f"获取背诵成绩历史失败: {str(e)}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
-
-# 添加健康检查端点
-@bp.route('/api/text-recitation/health', methods=['GET'])
-def health_check():
-    """健康检查端点"""
-    return jsonify({
-        'status': 'ok',
-        'message': '课文背诵服务运行正常',
-        'ocr_available': bool(os.environ.get('DASHSCOPE_API_KEY')),
-        'upload_limit': '1MB'
-    }), 200 
+        return jsonify({'error': str(e)}), 500 

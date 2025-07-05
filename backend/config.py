@@ -20,9 +20,4 @@ class Config:
     
     # 应用配置
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev')
-    DEBUG = True
-    
-    # 文件上传配置
-    MAX_CONTENT_LENGTH = 1 * 1024 * 1024  # 1MB 文件上传限制
-    UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'tiff'} 
+    DEBUG = True 
