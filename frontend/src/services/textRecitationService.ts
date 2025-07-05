@@ -16,6 +16,11 @@ export interface RecitationResult {
 export const textRecitationService = {
   // 上传图片并识别文字
   uploadImage: async (file: File): Promise<TextRecitation> => {
+    // 调试信息
+    console.log('textRecitationService: 准备上传图片');
+    console.log('textRecitationService: request baseURL =', (request as any).defaults.baseURL);
+    console.log('textRecitationService: localStorage token =', localStorage.getItem('token') ? '存在' : '不存在');
+    
     const formData = new FormData();
     formData.append('image', file);
     
