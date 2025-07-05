@@ -185,28 +185,41 @@ def recite_text(id):
         if not audio_file.filename.lower().endswith('.wav'):
             logger.error("文件不是WAV格式")
             return jsonify({'error': '请上传WAV格式的音频文件'}), 400
-        audio_bytes = audio_file.read()
-        logger.info(f"音频文件已读取，大小: {len(audio_bytes)} bytes")
-        is_valid, error_msg = is_valid_wav_file(audio_bytes)
+        temp_dir = tempfile.mkdtemp()
+        temp_path = os.path.join(temp_dir, 'temp.wav')
+        audio_file.save(temp_path)
+        logger.info(f"音频文件已保存到: {temp_path}")
+        is_valid, error_msg = is_valid_wav_file(temp_path)
         if not is_valid:
             logger.error(f"音频文件验证失败: {error_msg}")
             return jsonify({'error': error_msg}), 400
         try:
-            recited_text = speech_service.recognize(audio_bytes)
+            # 直接本地识别
+            recited_text = speech_service.recognize(temp_path)
             logger.info(f"识别结果: {recited_text}")
+            
+            # 确保识别结果不为None
             if recited_text is None:
                 recited_text = "语音识别失败，无法获取识别结果"
                 logger.warning("语音识别返回None")
+            
+            # 检查识别结果是否为空或无效
             if not recited_text or recited_text.strip() == "":
                 recited_text = "未能识别到语音内容"
                 logger.warning("语音识别返回空字符串")
+            
             logger.info(f"最终识别文本: {recited_text}")
             logger.info(f"原文内容: {text.content}")
+            
+            # 3. 计算相似度和评分
             similarity = calculate_similarity(text.content, recited_text)
             score = int(similarity * 100)
             logger.info(f"相似度: {similarity}, 得分: {score}")
+            
+            # 如果得分为0，但识别到了内容，给出提示
             if score == 0 and recited_text not in ["未能识别到语音内容", "语音识别失败，无法获取识别结果"]:
                 logger.info(f"得分为0但识别到内容，可能是内容不匹配")
+            
             return jsonify({
                 'recited_text': recited_text,
                 'original_text': text.content,
@@ -222,6 +235,12 @@ def recite_text(id):
                 'score': 0,
                 'similarity': 0.0
             }), 200
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            if os.path.exists(temp_dir):
+                os.rmdir(temp_dir)
+            logger.info("临时文件已清理")
     except Exception as e:
         logger.error(f"处理朗诵请求时发生错误: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500

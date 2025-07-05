@@ -20,13 +20,18 @@ class SpeechService:
         if not self.api_key:
             logger.warning("未配置DASHSCOPE_API_KEY，将尝试使用阿里云智能语音交互API")
 
-    def recognize(self, audio_data):
+    def recognize(self, audio_path):
         """
         识别音频文件中的语音内容
-        直接处理 bytes，不再读取磁盘文件
+        优先使用DashScope API，如果失败则使用阿里云智能语音交互API
         """
         try:
-            logger.info(f"开始语音识别，音频数据大小: {len(audio_data)} bytes")
+            # 读取音频文件
+            with open(audio_path, 'rb') as f:
+                audio_data = f.read()
+            
+            logger.info(f"开始语音识别，音频文件大小: {len(audio_data)} bytes")
+            
             # 方法1：使用DashScope语音识别API
             if self.api_key:
                 try:
@@ -36,6 +41,7 @@ class SpeechService:
                         return self._extract_final_text(result)
                 except Exception as e:
                     logger.warning(f"DashScope识别失败: {str(e)}")
+            
             # 方法2：使用阿里云智能语音交互API
             if self.access_key_id and self.access_key_secret:
                 try:
@@ -45,6 +51,7 @@ class SpeechService:
                         return self._extract_final_text(result)
                 except Exception as e:
                     logger.warning(f"阿里云NLS识别失败: {str(e)}")
+            
             # 方法3：使用DashScope多模态API（作为备选）
             if self.api_key:
                 try:
@@ -57,7 +64,10 @@ class SpeechService:
                         return final_text
                 except Exception as e:
                     logger.warning(f"DashScope多模态识别失败: {str(e)}")
+            
+            # 如果所有方法都失败，返回提示
             return "语音识别服务暂时不可用，请检查API配置或稍后重试"
+            
         except Exception as e:
             logger.error(f"语音识别过程中发生错误: {str(e)}")
             return f"语音识别失败: {str(e)}"
