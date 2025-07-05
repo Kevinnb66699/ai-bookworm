@@ -69,13 +69,21 @@ def create_text_recitation():
             ocr_result = ocr_service.recognize_text(image)
             logger.info(f"OCR原始结果: {type(ocr_result)} - {ocr_result}")
             
-            # 简化OCR结果处理，避免前缀
-            if isinstance(ocr_result, dict):
+            # 更健壮的OCR结果处理，兼容字符串化的字典
+            if isinstance(ocr_result, str):
+                # 尝试解析为字典
+                try:
+                    parsed = json.loads(ocr_result.replace("'", '"'))
+                    if isinstance(parsed, dict):
+                        content = parsed.get('text', '') or parsed.get('content', '')
+                    else:
+                        content = ocr_result
+                except Exception:
+                    content = ocr_result
+            elif isinstance(ocr_result, dict):
                 content = ocr_result.get('text', '') or ocr_result.get('content', '')
             elif isinstance(ocr_result, list):
                 content = ' '.join(str(item) for item in ocr_result)
-            elif isinstance(ocr_result, str):
-                content = ocr_result
             else:
                 content = ""
             # 确保content是字符串并清理格式
