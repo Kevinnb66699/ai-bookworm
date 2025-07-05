@@ -51,6 +51,7 @@ def upload_to_oss(local_file_path):
     return f"https://{OSS_BUCKET_NAME}.oss-cn-shanghai.aliyuncs.com/{oss_file_name}"
 
 @bp.route('/api/text-recitation', methods=['POST', 'OPTIONS'])
+@jwt_required(optional=True)
 def create_text_recitation():
     # 处理 OPTIONS 预检请求
     if request.method == 'OPTIONS':
@@ -62,7 +63,7 @@ def create_text_recitation():
         return response
     
     # 对于非 OPTIONS 请求，需要 JWT 验证
-    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+    from flask_jwt_extended import verify_jwt_in_request
     verify_jwt_in_request()
     
     try:
