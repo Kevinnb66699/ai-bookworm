@@ -59,17 +59,17 @@ try:
         response.headers['Access-Control-Max-Age'] = '3600'
         return response
     
-    # 处理所有 OPTIONS 请求
-    @app.before_request
-    def handle_options():
-        from flask import request, make_response
-        if request.method == "OPTIONS":
-            response = make_response()
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-            response.headers['Access-Control-Max-Age'] = '3600'
-            return response
+    # 简化 OPTIONS 请求处理 - 移除可能导致冲突的全局处理
+    # @app.before_request
+    # def handle_options():
+    #     from flask import request, make_response
+    #     if request.method == "OPTIONS":
+    #         response = make_response()
+    #         response.headers['Access-Control-Allow-Origin'] = '*'
+    #         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+    #         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    #         response.headers['Access-Control-Max-Age'] = '3600'
+    #         return response
     
     # 添加健康检查路由
     @app.route('/')
@@ -134,16 +134,16 @@ except Exception as e:
         response.headers['Access-Control-Max-Age'] = '3600'
         return response
     
-    @app.before_request
-    def handle_options():
-        from flask import request, make_response
-        if request.method == "OPTIONS":
-            response = make_response()
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-            response.headers['Access-Control-Max-Age'] = '3600'
-            return response
+    # @app.before_request
+    # def handle_options():
+    #     from flask import request, make_response
+    #     if request.method == "OPTIONS":
+    #         response = make_response()
+    #         response.headers['Access-Control-Allow-Origin'] = '*'
+    #         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+    #         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    #         response.headers['Access-Control-Max-Age'] = '3600'
+    #         return response
     
     @app.route('/')
     def health_check():
