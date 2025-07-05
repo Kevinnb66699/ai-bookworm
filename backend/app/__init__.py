@@ -106,13 +106,14 @@ def create_app():
             return response
 
     # 注册蓝图
-    from .routes import auth, course, word, review, text_recitation, reminder
+    from .routes import auth, course, word, review, text_recitation, reminder, text
     app.register_blueprint(auth.bp)
     app.register_blueprint(course.bp)
     app.register_blueprint(word.bp)
     app.register_blueprint(review.bp)
     app.register_blueprint(text_recitation.bp)
     app.register_blueprint(reminder.bp)
+    app.register_blueprint(text.bp)
     
     return app
 
