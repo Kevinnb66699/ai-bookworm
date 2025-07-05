@@ -27,6 +27,7 @@ const TextRecitation: React.FC = () => {
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
   const audioContext = useRef<AudioContext | null>(null);
+  const reciteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchTextList();
@@ -256,9 +257,18 @@ const TextRecitation: React.FC = () => {
       // 显示处理中的提示
       const hideLoading = message.loading('正在处理您的背诵，请稍候...', 0);
       
+      // 10秒超时定时器
+      if (reciteTimeoutRef.current) clearTimeout(reciteTimeoutRef.current);
+      reciteTimeoutRef.current = setTimeout(() => {
+        hideLoading();
+        setReciting(false);
+        setCurrentRecitationId(null);
+        message.error('提交背诵超时');
+      }, 10000);
+      
       const result = await textRecitationService.submitRecitation(targetId, audioBlob);
       
-      // 隐藏加载提示
+      if (reciteTimeoutRef.current) clearTimeout(reciteTimeoutRef.current);
       hideLoading();
       
       setRecitationResult(result);
@@ -273,6 +283,7 @@ const TextRecitation: React.FC = () => {
       }
       
     } catch (error) {
+      if (reciteTimeoutRef.current) clearTimeout(reciteTimeoutRef.current);
       console.error('提交背诵失败:', error);
       message.error('提交背诵失败，请重试');
     } finally {
