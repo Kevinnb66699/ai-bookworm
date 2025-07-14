@@ -5,6 +5,7 @@ import requests
 import logging
 import time
 import uuid
+import re
 
 
 logger = logging.getLogger(__name__)
@@ -82,7 +83,10 @@ class SpeechService:
         
         # 如果是字符串，检查是否是字典格式的字符串
         if isinstance(result, str):
-            # 检查是否是字典格式的字符串
+            # 处理DashScope英文前缀
+            match = re.search(r"The recognized text is: ['\"](.+?)['\"]", result)
+            if match:
+                return match.group(1).strip()
             if result.startswith("{'text':") or result.startswith('{"text":'):
                 try:
                     # 尝试解析为Python字典
@@ -98,7 +102,8 @@ class SpeechService:
                     text = text.replace('{"text":"', "").replace('"}', "")
                     return text.strip()
             else:
-                return result.strip()
+                # 去掉两端引号
+                return result.strip().strip("'\"")
         
         # 如果是字典，尝试提取text字段
         if isinstance(result, dict):
