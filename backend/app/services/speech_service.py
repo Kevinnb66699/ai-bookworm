@@ -260,7 +260,7 @@ class SpeechService:
                                 "audio": f"data:audio/wav;base64,{audio_base64}"
                             },
                             {
-                                "text": "请识别这段音频中的中文内容，只返回识别到的文字，不要添加任何解释。"
+                                "text": "Please recognize the English content in this audio and return only the recognized text without any explanation."
                             }
                         ]
                     }

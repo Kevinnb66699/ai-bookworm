@@ -100,7 +100,7 @@ def create_text_recitation():
         except Exception as ocr_error:
             logger.error(f"OCR识别失败: {str(ocr_error)}")
             # 即使OCR失败，也创建一个包含错误信息的记录
-            content = f"模拟课文内容（OCR暂时不可用）：春天来了，万物复苏。小草从土里钻出来，嫩嫩的，绿绿的。桃花笑红了脸，柳树摇着绿色的长辫子。请注意：这是模拟内容，实际识别功能需要配置OCR服务。"
+            content = f"Simulated text content (OCR temporarily unavailable): Spring has arrived, and everything is coming back to life. The grass is sprouting from the soil, tender and green. Peach blossoms are blushing, and willow trees are swaying their long green braids. Please note: This is simulated content, actual recognition requires OCR service configuration."
         
         # 保存到数据库
         text_recitation = TextRecitation(

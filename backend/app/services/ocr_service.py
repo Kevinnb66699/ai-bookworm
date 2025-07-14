@@ -51,16 +51,16 @@ class OCRService:
         # 模拟处理时间
         time.sleep(0.5)
         
-        # 根据图片大小生成不同的模拟文本
+        # 根据图片大小生成不同的模拟英文文本
         size = len(image_bytes)
-        timestamp = datetime.now().strftime("%Y年%m月%d日 %H:%M")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
         
         if size < 10000:
-            return f"这是一段模拟识别的课文内容（小图片）。当前时间：{timestamp}。请注意这是模拟OCR结果，用于测试目的。要使用真实的OCR功能，请配置DASHSCOPE_API_KEY环境变量。"
+            return f"This is a simulated OCR text content (small image). Current time: {timestamp}. Please note this is a simulated OCR result for testing purposes. To use real OCR functionality, please configure the DASHSCOPE_API_KEY environment variable."
         elif size < 100000:
-            return f"这是一段模拟识别的中等长度课文内容。当前时间：{timestamp}。春天来了，万物复苏。小草从土里钻出来，嫩嫩的，绿绿的。桃花笑红了脸，柳树摇着绿色的长辫子。这是模拟OCR结果，用于测试目的。"
+            return f"This is a simulated medium-length English text content. Current time: {timestamp}. Spring has arrived, and everything is coming back to life. The grass is sprouting from the soil, tender and green. Peach blossoms are blushing, and willow trees are swaying their long green braids. This is a simulated OCR result for testing purposes."
         else:
-            return f"这是一段模拟识别的长课文内容。当前时间：{timestamp}。春天来了，万物复苏，大地呈现出一派生机勃勃的景象。小草从土里钻出来，嫩嫩的，绿绿的，园子里，田野里，瞧去，一大片一大片满是的。桃花笑红了脸，柳树摇着绿色的长辫子，小燕子从南方飞回来了。这是模拟OCR结果，用于测试目的。要使用真实的OCR功能，请配置DASHSCOPE_API_KEY环境变量。"
+            return f"This is a simulated long English text content. Current time: {timestamp}. Spring has arrived, and everything is coming back to life, with the earth presenting a vibrant scene of vitality. The grass is sprouting from the soil, tender and green, in gardens and fields, everywhere you look, vast expanses of green. Peach blossoms are blushing, willow trees are swaying their long green braids, and little swallows have returned from the south. This is a simulated OCR result for testing purposes. To use real OCR functionality, please configure the DASHSCOPE_API_KEY environment variable."
 
     def _cloud_ocr(self, image_bytes):
         """使用阿里云OCR API"""
@@ -89,7 +89,7 @@ class OCRService:
                                 "image": f"data:image/jpeg;base64,{image_base64}"
                             },
                             {
-                                "text": "请识别图片中的所有文字内容，将所有文字连接成一段连贯的文本。"
+                                "text": "Please recognize all text content in the image and connect all text into a coherent paragraph in English."
                             }
                         ]
                     }
