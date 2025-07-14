@@ -55,18 +55,18 @@ class SpeechService:
                         return self._extract_final_text(result)
                 except Exception as e:
                     logger.warning(f"DashScope识别失败: {str(e)}")
-            
+            else:
+                pass
             # 方法3：使用阿里云智能语音交互API
-            elif self.access_key_id and self.access_key_secret:
+            '''elif self.access_key_id and self.access_key_secret:
                 try:
                     result = self._aliyun_nls_recognize(audio_data)
                     if result and result.strip():
                         logger.info(f"阿里云NLS识别成功: {result}")
                         return self._extract_final_text(result)
                 except Exception as e:
-                    logger.warning(f"阿里云NLS识别失败: {str(e)}")
-            else:
-                pass
+                    logger.warning(f"阿里云NLS识别失败: {str(e)}")'''
+            
             
             
             # 如果所有方法都失败，返回提示
@@ -176,7 +176,7 @@ class SpeechService:
             logger.error(f"阿里云NLS API调用失败: {response.status_code}, {response.text}")
             return None
 
-    def _aliyun_nls_recognize(self, audio_data):
+    '''def _aliyun_nls_recognize(self, audio_data):
         """使用阿里云智能语音交互API"""
         try:
             # 动态导入阿里云NLS SDK，避免模块加载时的导入错误
@@ -241,7 +241,7 @@ class SpeechService:
         except Exception as e:
             logger.error(f"阿里云NLS识别异常: {str(e)}")
             return None
-
+    '''
     def _dashscope_multimodal_recognize(self, audio_data):
         """使用DashScope多模态API进行语音识别"""
         # 将音频转换为base64
