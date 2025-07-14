@@ -30,7 +30,7 @@ const CreateCourse: React.FC = () => {
         description: course.description
       });
     } catch (error) {
-      message.error('Failed to get course information');
+      message.error('获取课程信息失败');
       navigate('/courses');
     }
   };
@@ -39,20 +39,20 @@ const CreateCourse: React.FC = () => {
     try {
       if (isEdit) {
         await updateCourse(Number(id), values);
-        message.success('Course updated successfully!');
+        message.success('课程更新成功！');
       } else {
         await createCourse(values);
-        message.success('Course created successfully!');
+        message.success('课程创建成功！');
       }
       navigate('/courses');
     } catch (error) {
-      message.error(isEdit ? 'Update failed, please try again!' : 'Creation failed, please try again!');
+      message.error(isEdit ? '更新失败，请重试！' : '创建失败，请重试！');
     }
   };
 
   return (
     <div style={{ padding: '24px' }}>
-      <Card title={isEdit ? 'Edit Course' : 'Create New Course'}>
+      <Card title={isEdit ? '编辑课程' : '创建新课程'}>
         <Form
           form={form}
           layout="vertical"
@@ -60,26 +60,26 @@ const CreateCourse: React.FC = () => {
         >
           <Form.Item
             name="name"
-            label="Course Name"
-            rules={[{ required: true, message: 'Please enter course name' }]}
+            label="课程名称"
+            rules={[{ required: true, message: '请输入课程名称' }]}
           >
             <Input />
           </Form.Item>
           <Form.Item
             name="description"
-            label="Course Description"
+            label="课程描述"
           >
             <TextArea rows={4} />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">
-              {isEdit ? 'Update' : 'Create'}
+              {isEdit ? '更新' : '创建'}
             </Button>
             <Button 
               style={{ marginLeft: 8 }} 
               onClick={() => navigate('/courses')}
             >
-              Cancel
+              取消
             </Button>
           </Form.Item>
         </Form>

@@ -21,8 +21,8 @@ const CourseList: React.FC = () => {
       const data = await getCourses();
       setCourses(data);
     } catch (error) {
-      console.error('Failed to get course list:', error);
-      message.error('Failed to get course list');
+      console.error('获取课程列表失败:', error);
+      message.error('获取课程列表失败');
     } finally {
       setLoading(false);
     }
@@ -36,9 +36,9 @@ const CourseList: React.FC = () => {
     <div style={{ padding: '24px' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title level={2}>My Courses</Title>
+          <Title level={2}>我的课程</Title>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateCourse}>
-            Create Course
+            创建课程
           </Button>
         </div>
 
@@ -52,11 +52,11 @@ const CourseList: React.FC = () => {
               >
                 <p>{course.description}</p>
                 <Space>
-                  <span>Words: {course.word_count}</span>
-                  <span>Texts: {course.text_count}</span>
+                  <span>单词: {course.word_count}</span>
+                  <span>课文: {course.text_count}</span>
                 </Space>
                 <div style={{ marginTop: '8px', color: '#999' }}>
-                  Created: {new Date(course.created_at).toLocaleDateString()}
+                  创建于: {new Date(course.created_at).toLocaleDateString()}
                 </div>
               </Card>
             </Col>

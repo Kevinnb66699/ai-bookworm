@@ -13,7 +13,7 @@ export const API_BASE_URL = process.env.REACT_APP_API_URL || getDefaultApiUrl();
 // 直接导出API URL，不使用代理
 export const getApiUrl = () => API_BASE_URL;
 
-export const APP_NAME = 'AI Bookworm';
+export const APP_NAME = 'AI书童';
 
 export const TOKEN_KEY = 'token';
 

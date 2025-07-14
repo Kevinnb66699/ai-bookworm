@@ -21,11 +21,11 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn }) => {
         localStorage.setItem('token', response.token);
         localStorage.setItem('username', response.user.username);
         setIsLoggedIn(true);
-        message.success('Login successful!');
+        message.success('登录成功！');
         navigate('/');
       }
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'Login failed, please try again');
+      message.error(error.response?.data?.message || '登录失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -39,12 +39,12 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn }) => {
         password: values.password,
         email: values.email
       });
-      message.success('Registration successful! Please login');
+      message.success('注册成功！请登录');
       setRegisterModalVisible(false);
       // 自动填充登录表单
       onFinish({ email: values.email, password: values.password });
     } catch (error: any) {
-      message.error(error.response?.data?.error || 'Registration failed, please try again!');
+      message.error(error.response?.data?.error || '注册失败，请重试！');
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,7 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn }) => {
       background: '#f0f2f5'
     }}>
       <Card style={{ width: 400 }}>
-        <h1 style={{ textAlign: 'center', marginBottom: 24 }}>AI Bookworm</h1>
+        <h1 style={{ textAlign: 'center', marginBottom: 24 }}>AI 书童</h1>
         <Form
           name="login"
           onFinish={onFinish}
@@ -67,40 +67,40 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn }) => {
           layout="vertical"
         >
           <Form.Item
-            label="Email"
+            label="邮箱"
             name="email"
             rules={[
-              { required: true, message: 'Please enter your email' },
-              { type: 'email', message: 'Please enter a valid email address' }
+              { required: true, message: '请输入邮箱' },
+              { type: 'email', message: '请输入有效的邮箱地址' }
             ]}
           >
-            <Input placeholder="Please enter your email" />
+            <Input placeholder="请输入邮箱" />
           </Form.Item>
 
           <Form.Item
-            label="Password"
+            label="密码"
             name="password"
-            rules={[{ required: true, message: 'Please enter your password' }]}
+            rules={[{ required: true, message: '请输入密码' }]}
           >
-            <Input.Password placeholder="Please enter your password" />
+            <Input.Password placeholder="请输入密码" />
           </Form.Item>
 
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading} block>
-              Login
+              登录
             </Button>
           </Form.Item>
 
           <div style={{ textAlign: 'center' }}>
             <Button type="link" onClick={() => setRegisterModalVisible(true)}>
-              Don't have an account? Register now
+              还没有账号？立即注册
             </Button>
           </div>
         </Form>
       </Card>
 
       <Modal
-        title="Register New Account"
+        title="注册新账号"
         open={registerModalVisible}
         onCancel={() => setRegisterModalVisible(false)}
         footer={null}
@@ -112,11 +112,11 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn }) => {
         >
           <Form.Item
             name="username"
-            rules={[{ required: true, message: 'Please enter your username!' }]}
+            rules={[{ required: true, message: '请输入用户名！' }]}
           >
             <Input 
               prefix={<UserOutlined />} 
-              placeholder="Username" 
+              placeholder="用户名" 
               size="large"
             />
           </Form.Item>
@@ -124,13 +124,13 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn }) => {
           <Form.Item
             name="email"
             rules={[
-              { required: true, message: 'Please enter your email!' },
-              { type: 'email', message: 'Please enter a valid email address!' }
+              { required: true, message: '请输入邮箱！' },
+              { type: 'email', message: '请输入有效的邮箱地址！' }
             ]}
           >
             <Input 
               prefix={<MailOutlined />} 
-              placeholder="Email" 
+              placeholder="邮箱" 
               size="large"
             />
           </Form.Item>
@@ -138,13 +138,13 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn }) => {
           <Form.Item
             name="password"
             rules={[
-              { required: true, message: 'Please enter your password!' },
-              { min: 6, message: 'Password must be at least 6 characters!' }
+              { required: true, message: '请输入密码！' },
+              { min: 6, message: '密码长度不能小于6位！' }
             ]}
           >
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder="Password"
+              placeholder="密码"
               size="large"
             />
           </Form.Item>
@@ -157,7 +157,7 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn }) => {
               block
               size="large"
             >
-              Register
+              注册
             </Button>
           </Form.Item>
         </Form>

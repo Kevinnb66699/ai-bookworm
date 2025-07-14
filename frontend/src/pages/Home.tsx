@@ -24,7 +24,7 @@ const Home: React.FC = () => {
         [courseId]: data
       }));
     } catch (error) {
-      console.error('Failed to get practice progress:', error);
+      console.error('获取练习进度失败:', error);
     }
   };
 
@@ -40,7 +40,7 @@ const Home: React.FC = () => {
         });
       }
     } catch (error) {
-      message.error('Failed to get course list');
+      message.error('获取课程列表失败');
     } finally {
       setLoading(false);
     }
@@ -69,14 +69,14 @@ const Home: React.FC = () => {
         <Col span={16}>
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-              <Title level={1}>Welcome to AI Bookworm</Title>
-              <Text>This is an intelligent learning assistant that helps you learn and memorize knowledge better.</Text>
+              <Title level={1}>欢迎使用 AI 书童</Title>
+              <Text>这是一个智能的学习助手，帮助你更好地学习和记忆知识。</Text>
             </div>
 
             <Card>
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <div>
-                  <Text strong style={{ marginRight: '16px' }}>Select Course:</Text>
+                  <Text strong style={{ marginRight: '16px' }}>选择课程：</Text>
                   <Select
                     style={{ width: 200 }}
                     value={selectedCourseId}
@@ -92,22 +92,22 @@ const Home: React.FC = () => {
                 {selectedCourse && selectedProgress && (
                   <>
                     <div>
-                      <strong>Total Words:</strong> {selectedCourse.word_count || 0}
+                      <strong>单词总数：</strong>{selectedCourse.word_count || 0}
                     </div>
                     <div>
-                      <strong>Practice Progress:</strong>
+                      <strong>练习进度：</strong>
                       <Progress
                         percent={Math.round((selectedProgress.practiced_words / selectedProgress.total_words) * 100)}
                         status={selectedProgress.accuracy === 100 ? 'success' : 'active'}
                       />
                       <div style={{ marginTop: 8 }}>
-                        Practiced: {selectedProgress.practiced_words}/{selectedProgress.total_words} | 
-                        Accuracy: {selectedProgress.accuracy.toFixed(1)}%
+                        已练习: {selectedProgress.practiced_words}/{selectedProgress.total_words} | 
+                        正确率: {selectedProgress.accuracy.toFixed(1)}%
                       </div>
                     </div>
                     {showPracticeButton && (
                       <Button type="primary" onClick={() => handlePractice(selectedCourse.id)}>
-                        Start Practice
+                        开始练习
                       </Button>
                     )}
                   </>

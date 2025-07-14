@@ -94,7 +94,6 @@ try:
         
 except Exception as e:
     logger.error(f"应用初始化错误: {str(e)}")
-    init_error = str(e)  # 新增
     # 创建一个简单的 Flask 应用作为备用
     from flask import Flask, jsonify
     app = Flask(__name__)
@@ -150,13 +149,13 @@ except Exception as e:
     def health_check():
         return jsonify({
             'status': 'error', 
-            'message': f'应用初始化失败: {init_error}',
+            'message': f'应用初始化失败: {str(e)}',
             'service': 'ai-bookworm-backend'
         }), 500
     
     @app.route('/health')
     def health():
-        return jsonify({'status': 'error', 'message': init_error}), 500
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # 确保应用可以被 Vercel 发现
 application = app
