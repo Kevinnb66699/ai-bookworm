@@ -30,8 +30,8 @@ class OCRService:
             if self.mock_mode:
                 return self._mock_ocr(image_bytes)
             else:
-                # 使用云端OCR
-                return self._cloud_ocr(image_bytes)
+            # 使用云端OCR
+            return self._cloud_ocr(image_bytes)
             
         except Exception as e:
             # 如果云端OCR失败，回退到模拟OCR

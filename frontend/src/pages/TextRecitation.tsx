@@ -38,7 +38,7 @@ const TextRecitation: React.FC = () => {
       const data = await textRecitationService.getTextList();
       setTextList(data);
     } catch (error) {
-      message.error('获取课文列表失败');
+      message.error('Failed to get text list');
     }
   };
 
@@ -47,11 +47,11 @@ const TextRecitation: React.FC = () => {
       setLoading(true);
       const newText = await textRecitationService.uploadImage(file as File);
       setTextList(prev => [newText, ...prev]);
-      message.success('课文识别成功！');
+      message.success('Text recognition successful!');
       onSuccess?.('ok');
     } catch (error) {
-      message.error('课文识别失败，请重试');
-      onError?.(new Error('上传失败'));
+      message.error('Text recognition failed, please try again');
+      onError?.(new Error('Upload failed'));
     } finally {
       setLoading(false);
     }
@@ -61,9 +61,9 @@ const TextRecitation: React.FC = () => {
     try {
       await textRecitationService.deleteText(id);
       setTextList(prev => prev.filter(item => item.id !== id));
-      message.success('删除成功');
+      message.success('Deleted successfully');
     } catch (error) {
-      message.error('删除失败');
+      message.error('Failed to delete');
     }
   };
 
@@ -87,10 +87,10 @@ const TextRecitation: React.FC = () => {
       setTextList(prev => prev.map(item => 
         item.id === editingText.id ? updatedText : item
       ));
-      message.success('更新成功');
+      message.success('Updated successfully');
       handleEditCancel();
     } catch (error) {
-      message.error('更新失败，请重试');
+      message.error('Failed to update, please try again');
     }
   };
 
@@ -186,33 +186,33 @@ const TextRecitation: React.FC = () => {
 
       mediaRecorder.current.onstop = async () => {
         try {
-          console.log('录音停止，音频块数量:', audioChunks.current.length);
+          console.log('Recording stopped, number of audio chunks:', audioChunks.current.length);
           if (audioChunks.current.length === 0) {
-            console.error('没有录音数据');
-            message.error('没有录音数据，请重试');
+            console.error('No recording data');
+            message.error('No recording data, please try again');
             setCurrentRecitationId(null);
             return;
           }
           
           const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
-          console.log('音频Blob大小:', audioBlob.size);
+          console.log('Audio Blob size:', audioBlob.size);
           
           const wavBlob = await convertToWav(audioBlob);
-          console.log('WAV Blob大小:', wavBlob.size);
+          console.log('WAV Blob size:', wavBlob.size);
           
           // 直接传递id参数，避免依赖异步状态更新
           await submitRecitation(wavBlob, id);
         } catch (error) {
-          console.error('处理录音数据失败:', error);
-          message.error('处理录音失败，请重试');
+          console.error('Failed to process recording data:', error);
+          message.error('Failed to process recording, please try again');
           setReciting(false);
           setCurrentRecitationId(null);
         }
       };
 
       mediaRecorder.current.onerror = (event) => {
-        console.error('录音错误:', event);
-        message.error('录音过程中出现错误');
+        console.error('Recording error:', event);
+        message.error('An error occurred during recording');
         setRecording(false);
         setCurrentRecitationId(null);
       };
@@ -220,10 +220,10 @@ const TextRecitation: React.FC = () => {
       mediaRecorder.current.start();
       setRecording(true);
       setCurrentRecitationId(id);
-      message.success('开始录音');
+      message.success('Started recording');
     } catch (error) {
-      console.error('启动录音失败:', error);
-      message.error('无法访问麦克风');
+      console.error('Failed to start recording:', error);
+      message.error('Microphone access failed');
       setRecording(false);
       setCurrentRecitationId(null);
     }
@@ -246,16 +246,16 @@ const TextRecitation: React.FC = () => {
     const targetId = recitationId || currentRecitationId;
     
     if (!targetId) {
-      console.error('没有当前背诵ID');
+      console.error('No current recitation ID');
       return;
     }
     
     try {
       setReciting(true);
-      console.log('开始提交背诵，ID:', targetId);
+      console.log('Starting recitation submission, ID:', targetId);
       
       // 显示处理中的提示
-      const hideLoading = message.loading('正在处理您的背诵，请稍候...', 0);
+      const hideLoading = message.loading('Processing your recitation, please wait...', 0);
       
       // 10秒超时定时器
       if (reciteTimeoutRef.current) clearTimeout(reciteTimeoutRef.current);
@@ -263,7 +263,7 @@ const TextRecitation: React.FC = () => {
         hideLoading();
         setReciting(false);
         setCurrentRecitationId(null);
-        message.error('提交背诵超时');
+        message.error('Recitation submission timed out');
       }, 10000);
       
       const result = await textRecitationService.submitRecitation(targetId, audioBlob);
@@ -275,17 +275,17 @@ const TextRecitation: React.FC = () => {
       
       // 根据得分给出不同的反馈
       if (result.score >= 80) {
-        message.success(`背诵评分：${result.score}分 - 太棒了！`);
+        message.success(`Recitation score: ${result.score} points - Great job!`);
       } else if (result.score >= 60) {
-        message.success(`背诵评分：${result.score}分 - 不错哦！`);
+        message.success(`Recitation score: ${result.score} points - Good job!`);
       } else {
-        message.info(`背诵评分：${result.score}分 - 继续努力！`);
+        message.info(`Recitation score: ${result.score} points - Keep practicing!`);
       }
       
     } catch (error) {
       if (reciteTimeoutRef.current) clearTimeout(reciteTimeoutRef.current);
-      console.error('提交背诵失败:', error);
-      message.error('提交背诵失败，请重试');
+      console.error('Recitation submission failed:', error);
+      message.error('Recitation submission failed, please try again');
     } finally {
       setReciting(false);
       // 确保清理当前背诵ID，无论成功还是失败
@@ -306,16 +306,16 @@ const TextRecitation: React.FC = () => {
       setScores(response.data);
       setScoresModalVisible(true);
     } catch (error) {
-      message.error('获取成绩历史失败');
+      message.error('Failed to get score history');
     }
   };
 
   return (
     <div style={{ padding: '24px' }}>
-      <Title level={2}>课文背诵</Title>
+      <Title level={2}>Text Recitation</Title>
       <Card style={{ marginBottom: '24px' }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Text>点击下方按钮拍照上传课文图片，系统将自动识别文字内容</Text>
+          <Text>Click the button below to take a photo and upload text images. The system will automatically recognize the text content.</Text>
           <Upload
             accept="image/*"
             showUploadList={false}
@@ -328,14 +328,14 @@ const TextRecitation: React.FC = () => {
               loading={loading}
               size="large"
             >
-              拍照上传课文
+              Take Photo & Upload Text
             </Button>
           </Upload>
         </Space>
       </Card>
 
       <List
-        header={<Title level={4}>我的课文列表</Title>}
+        header={<Title level={4}>My Text List</Title>}
         bordered
         dataSource={textList}
         renderItem={item => (
@@ -349,7 +349,7 @@ const TextRecitation: React.FC = () => {
                   onClick={stopRecording}
                   size="large"
                 >
-                  停止录音
+                  Stop Recording
                 </Button>
               ) : reciting && currentRecitationId === item.id ? (
                 <Button
@@ -359,7 +359,7 @@ const TextRecitation: React.FC = () => {
                   disabled={true}
                   size="large"
                 >
-                  正在处理...
+                  Processing...
                 </Button>
               ) : (
                 <>
@@ -370,7 +370,7 @@ const TextRecitation: React.FC = () => {
                     disabled={recording || reciting}
                     size="large"
                   >
-                    开始背诵
+                    Start Recitation
                   </Button>
                   <Button
                     type="primary"
@@ -378,7 +378,7 @@ const TextRecitation: React.FC = () => {
                     onClick={() => fetchScores(item.id)}
                     style={{ marginLeft: 8 }}
                   >
-                    查看成绩
+                    View Scores
                   </Button>
                 </>
               ),
@@ -388,7 +388,7 @@ const TextRecitation: React.FC = () => {
                 icon={<EditOutlined />}
                 onClick={() => handleEdit(item.id, item.content)}
               >
-                编辑
+                Edit
               </Button>,
               <Button
                 type="text"
@@ -396,14 +396,14 @@ const TextRecitation: React.FC = () => {
                 icon={<DeleteOutlined />}
                 onClick={() => handleDelete(item.id)}
               >
-                删除
+                Delete
               </Button>
             ]}
           >
             <List.Item.Meta
               title={<Text strong>{item.createTime}</Text>}
               description={
-                <Paragraph ellipsis={{ rows: 3, expandable: true, symbol: '展开' }}>
+                <Paragraph ellipsis={{ rows: 3, expandable: true, symbol: 'Expand' }}>
                   {item.content}
                 </Paragraph>
               }
@@ -413,31 +413,31 @@ const TextRecitation: React.FC = () => {
       />
 
       <Modal
-        title="编辑课文"
+        title="Edit Text"
         open={editModalVisible}
         onOk={handleEditSubmit}
         onCancel={handleEditCancel}
-        okText="保存"
-        cancelText="取消"
+        okText="Save"
+        cancelText="Cancel"
         width={600}
       >
         <TextArea
           value={editContent}
           onChange={e => setEditContent(e.target.value)}
           rows={10}
-          placeholder="请输入课文内容"
+          placeholder="Please enter the text content"
         />
       </Modal>
 
-      {/* 背诵结果对话框 */}
+      {/* Recitation Result Dialog */}
       <Modal
-        title="背诵结果"
+        title="Recitation Result"
         open={!!recitationResult}
         onOk={handleResultClose}
         onCancel={handleResultClose}
         footer={[
           <Button key="close" type="primary" onClick={handleResultClose}>
-            关闭
+            Close
           </Button>
         ]}
         width={600}
@@ -445,7 +445,7 @@ const TextRecitation: React.FC = () => {
         {recitationResult && (
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             <div>
-              <Title level={5}>得分</Title>
+              <Title level={5}>Score</Title>
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                 <Progress
                   type="circle"
@@ -466,31 +466,31 @@ const TextRecitation: React.FC = () => {
                     color: '#666',
                     marginTop: '4px'
                   }}>
-                    分
+                    points
                   </div>
                 </div>
               </div>
             </div>
             <div>
-              <Title level={5}>原文</Title>
+              <Title level={5}>Original Text</Title>
               <Paragraph>{recitationResult.original_text}</Paragraph>
             </div>
             <div>
-              <Title level={5}>识别结果</Title>
+              <Title level={5}>Recognition Result</Title>
               <Paragraph>{recitationResult.recited_text}</Paragraph>
             </div>
           </Space>
         )}
       </Modal>
 
-      {/* 成绩历史对话框 */}
+      {/* Score History Dialog */}
       <Modal
-        title="背诵成绩"
+        title="Recitation Scores"
         open={scoresModalVisible}
         onCancel={() => setScoresModalVisible(false)}
         footer={[
           <Button key="close" onClick={() => setScoresModalVisible(false)}>
-            关闭
+            Close
           </Button>
         ]}
         width={600}
@@ -498,7 +498,7 @@ const TextRecitation: React.FC = () => {
         {scores && (
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             <div>
-              <Title level={5}>当前成绩</Title>
+              <Title level={5}>Current Score</Title>
               <Progress
                 type="circle"
                 percent={scores.current_score || 0}
@@ -506,7 +506,7 @@ const TextRecitation: React.FC = () => {
               />
             </div>
             <div>
-              <Title level={5}>最好成绩</Title>
+              <Title level={5}>Best Score</Title>
               <Progress
                 type="circle"
                 percent={scores.best_score || 0}
@@ -514,7 +514,7 @@ const TextRecitation: React.FC = () => {
               />
             </div>
             <div>
-              <Title level={5}>历史记录</Title>
+              <Title level={5}>History</Title>
               <List
                 dataSource={scores.history}
                 renderItem={item => (

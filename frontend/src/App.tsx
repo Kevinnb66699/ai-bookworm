@@ -35,22 +35,22 @@ const AppContent: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     setIsLoggedIn(false);
-    message.success('退出登录成功！');
+    message.success('Logged out successfully!');
     navigate('/login');
   };
 
   const handleUpgrade = () => {
-    message.info('支付功能开发中...');
+    message.info('Payment feature is under development...');
   };
 
   const userMenu = (
     <Menu>
       <Menu.Item key="profile" icon={<UserOutlined />} onClick={() => navigate('/profile')}>
-        个人信息
+        Profile
       </Menu.Item>
       <Menu.Item key="membership" icon={<CrownOutlined />}>
         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-          <span>会员等级：{isPremium ? '升级版' : '普通版'}</span>
+          <span>Membership: {isPremium ? 'Premium' : 'Basic'}</span>
           {!isPremium && (
             <Button 
               type="primary" 
@@ -58,17 +58,17 @@ const AppContent: React.FC = () => {
               onClick={handleUpgrade}
               style={{ backgroundColor: '#ff85c0', borderColor: '#ff85c0' }}
             >
-              升级
+              Upgrade
             </Button>
           )}
         </Space>
       </Menu.Item>
       <Menu.Item key="settings" icon={<SettingOutlined />} onClick={() => navigate('/settings')}>
-        设置
+        Settings
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
-        退出登录
+        Logout
       </Menu.Item>
     </Menu>
   );
@@ -77,19 +77,19 @@ const AppContent: React.FC = () => {
     {
       key: 'home',
       icon: <HomeOutlined />,
-      label: '首页',
+      label: 'Home',
       onClick: () => navigate('/'),
     },
     {
       key: 'courses',
       icon: <BookOutlined />,
-      label: '课程',
+      label: 'Courses',
       onClick: () => navigate('/courses'),
     },
     {
       key: 'text-recitation',
       icon: <ReadOutlined />,
-      label: '课文背诵',
+      label: 'Text Recitation',
       onClick: () => navigate('/text-recitation'),
     },
   ];
@@ -108,7 +108,7 @@ const AppContent: React.FC = () => {
     <Layout className="layout">
       <Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <h1 style={{ color: 'white', margin: 0, marginRight: '20px' }}>AI 书童</h1>
+          <h1 style={{ color: 'white', margin: 0, marginRight: '20px' }}>AI Bookworm</h1>
           <Menu
             theme="dark"
             mode="horizontal"
@@ -121,9 +121,9 @@ const AppContent: React.FC = () => {
           <Button type="text" style={{ color: 'white' }}>
             <Space>
               <Avatar icon={<UserOutlined />} />
-              <span>{localStorage.getItem('username') || '用户名'}</span>
+              <span>{localStorage.getItem('username') || 'Username'}</span>
               <Tag color={isPremium ? 'gold' : 'default'}>
-                {isPremium ? '升级版' : '普通版'}
+                {isPremium ? 'Premium' : 'Basic'}
               </Tag>
             </Space>
           </Button>
@@ -137,12 +137,12 @@ const AppContent: React.FC = () => {
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/courses/:id/edit" element={<CreateCourse />} />
           <Route path="/text-recitation" element={<TextRecitation />} />
-          <Route path="/profile" element={<div>个人信息页面（开发中）</div>} />
-          <Route path="/settings" element={<div>设置页面（开发中）</div>} />
+          <Route path="/profile" element={<div>Profile page (under development)</div>} />
+          <Route path="/settings" element={<div>Settings page (under development)</div>} />
         </Routes>
       </Content>
       <Footer style={{ textAlign: 'center' }}>
-        AI 书童 ©{new Date().getFullYear()} Created by Kevin
+        AI Bookworm ©{new Date().getFullYear()} Created by Kevin
       </Footer>
     </Layout>
   );
