@@ -78,48 +78,35 @@ class SpeechService:
 
     def _extract_final_text(self, result):
         """从各种格式的结果中提取最终的纯文本"""
+        import re, ast
         if not result:
             return "未能识别到语音内容"
-        
-        # 如果是字符串，优先通用提取引号内内容
-        if isinstance(result, str):
-            # 通用匹配：找第一个单/双引号包裹的内容
-            match = re.search(r"['\"]([^'\"]+)['\"]", result)
-            if match:
-                return match.group(1).strip()
-            if result.startswith("{'text':") or result.startswith('{"text":'):
-                try:
-                    # 尝试解析为Python字典
-                    import ast
-                    parsed = ast.literal_eval(result)
-                    if isinstance(parsed, dict) and 'text' in parsed:
-                        return str(parsed['text']).strip()
-                except:
-                    # 如果解析失败，使用字符串替换方法
-                    text = result.replace("{'text': '", "").replace("'}", "")
-                    text = text.replace('{"text": "', "").replace('"}', "")
-                    text = text.replace("{'text':'", "").replace("'}", "")
-                    text = text.replace('{"text":"', "").replace('"}', "")
-                    return text.strip()
-            else:
-                # 去掉两端引号
-                return result.strip().strip("'\"")
-        
-        # 如果是字典，尝试提取text字段
+
+        # 如果是字典，优先取text字段
         if isinstance(result, dict):
             if 'text' in result:
                 return str(result['text']).strip()
             else:
-                # 如果没有text字段，转换为字符串并去掉字典格式
-                text = str(result)
-                # 去掉字典的大括号和引号
-                text = text.replace("{'text': '", "").replace("'}", "").replace("{", "").replace("}", "")
-                return text.strip()
-        
+                return str(result).strip()
+
+        # 如果是字符串，尝试解析为字典
+        if isinstance(result, str):
+            try:
+                parsed = ast.literal_eval(result)
+                if isinstance(parsed, dict) and 'text' in parsed:
+                    return str(parsed['text']).strip()
+            except Exception:
+                pass
+            # 通用匹配：找第一个冒号后单/双引号包裹的内容，但排除key
+            match = re.search(r":\s*['\"]([^'\"]+)['\"]", result)
+            if match:
+                return match.group(1).strip()
+            return result.strip().strip("'\"")
+
         # 如果是列表，合并文本
         if isinstance(result, list):
             return ' '.join(str(item) for item in result).strip()
-        
+
         # 其他情况，转为字符串
         return str(result).strip()
 
