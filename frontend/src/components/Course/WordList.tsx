@@ -26,11 +26,11 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
     try {
       setLoading(true);
       await deleteWord(id);
-      message.success('删除成功');
+      message.success('Deleted successfully');
       onWordChange();
     } catch (error) {
-      console.error('删除单词失败:', error);
-      message.error('删除失败');
+      console.error('Failed to delete word:', error);
+      message.error('Failed to delete');
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
 
       // 如果过滤后没有有效的释义，则报错
       if (validMeanings.length === 0) {
-        message.error('至少需要一个有效的释义');
+        message.error('At least one valid meaning is required');
         return;
       }
 
@@ -79,10 +79,10 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
 
       if (editingWord) {
         await updateWord(editingWord.id, wordData);
-        message.success('更新成功');
+        message.success('Updated successfully');
       } else {
         await createWord(wordData);
-        message.success('添加成功');
+        message.success('Added successfully');
       }
       
       setIsModalVisible(false);
@@ -90,13 +90,13 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
       form.resetFields();
       onWordChange();
     } catch (error: any) {
-      console.error('操作失败:', error);
+      console.error('Operation failed:', error);
       if (error.response?.data?.error) {
         message.error(error.response.data.error);
       } else if (error.message) {
         message.error(error.message);
       } else {
-        message.error('操作失败，请重试');
+        message.error('Operation failed, please try again');
       }
     } finally {
       setLoading(false);
@@ -106,7 +106,7 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
   return (
     <div>
       <Modal
-        title={editingWord ? "编辑单词" : "添加单词"}
+        title={editingWord ? "Edit Word" : "Add Word"}
         open={isModalVisible}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
@@ -124,10 +124,10 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
         >
           <Form.Item
             name="word"
-            label="单词"
-            rules={[{ required: true, message: '请输入单词' }]}
+            label="Word"
+            rules={[{ required: true, message: 'Please enter the word' }]}
           >
-            <Input placeholder="请输入单词" />
+            <Input placeholder="Please enter the word" />
           </Form.Item>
 
           <Form.List
@@ -136,7 +136,7 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
               {
                 validator: async (_, meanings) => {
                   if (!meanings || meanings.length < 1) {
-                    return Promise.reject(new Error('至少需要一个释义'));
+                    return Promise.reject(new Error('At least one meaning is required'));
                   }
                   return Promise.resolve();
                 },
@@ -149,7 +149,7 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
                   <Form.Item
                     required={false}
                     key={field.key}
-                    label={index === 0 ? <span><span style={{ color: '#ff4d4f' }}>*</span>释义</span> : ""}
+                    label={index === 0 ? <span><span style={{ color: '#ff4d4f' }}>*</span>Meaning</span> : ""}
                   >
                     <Space>
                       <Form.Item
@@ -158,7 +158,7 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
                         rules={[]}
                         noStyle
                       >
-                        <Input placeholder="请输入释义" style={{ width: '300px' }} />
+                        <Input placeholder="Please enter the meaning" style={{ width: '300px' }} />
                       </Form.Item>
                       {fields.length > 1 && (
                         <MinusCircleOutlined onClick={() => remove(field.name)} />
@@ -173,7 +173,7 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
                     icon={<PlusOutlined />}
                     style={{ width: '300px' }}
                   >
-                    添加释义
+                    Add Meaning
                   </Button>
                   <Form.ErrorList errors={errors} />
                 </Form.Item>
@@ -183,22 +183,22 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
 
           <Form.Item
             name="pronunciation"
-            label="发音"
+            label="Pronunciation"
           >
-            <Input placeholder="请输入发音" />
+            <Input placeholder="Please enter the pronunciation" />
           </Form.Item>
 
           <Form.Item
             name="example"
-            label="例句"
+            label="Example Sentence"
           >
-            <Input.TextArea placeholder="请输入例句" />
+            <Input.TextArea placeholder="Please enter the example sentence" />
           </Form.Item>
         </Form>
       </Modal>
 
       <Button type="primary" onClick={handleAdd}>
-        添加单词
+        Add Word
       </Button>
 
       <List
@@ -206,32 +206,32 @@ const WordList: React.FC<WordListProps> = memo(({ courseId, words, onWordChange 
         grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 3, xl: 4, xxl: 4 }}
         dataSource={words}
         locale={{
-          emptyText: '暂无单词，点击上方按钮添加'
+          emptyText: 'No words yet, click the button above to add'
         }}
         renderItem={(word) => (
           <List.Item
             actions={[
               <Space key="actions">
-                <Button type="link" onClick={() => handleEdit(word)}>编辑</Button>
-                <Button type="link" danger onClick={() => handleDelete(word.id)}>删除</Button>
+                <Button type="link" onClick={() => handleEdit(word)}>Edit</Button>
+                <Button type="link" danger onClick={() => handleDelete(word.id)}>Delete</Button>
               </Space>
             ]}
           >
             <div>
               <h4>{word.word}</h4>
-              <p><strong>翻译：</strong></p>
+              <p><strong>Translation:</strong></p>
               <ul>
                 {word.meanings.map((meaning: string, index: number) => (
                   <li key={index}>{meaning}</li>
                 ))}
               </ul>
               {word.pronunciation && (
-                <p><strong>发音：</strong>{word.pronunciation}</p>
+                <p><strong>Pronunciation:</strong> {word.pronunciation}</p>
               )}
               {word.example && (
-                <p><strong>例句：</strong>{word.example}</p>
+                <p><strong>Example:</strong> {word.example}</p>
               )}
-              <p><strong>创建时间：</strong>{new Date(word.created_at).toLocaleString()}</p>
+              <p><strong>Created At:</strong> {new Date(word.created_at).toLocaleString()}</p>
             </div>
           </List.Item>
         )}
