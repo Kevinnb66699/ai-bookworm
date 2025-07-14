@@ -81,10 +81,10 @@ class SpeechService:
         if not result:
             return "未能识别到语音内容"
         
-        # 如果是字符串，检查是否是字典格式的字符串
+        # 如果是字符串，优先通用提取引号内内容
         if isinstance(result, str):
-            # 处理DashScope英文前缀
-            match = re.search(r"The recognized text is: ['\"](.+?)['\"]", result)
+            # 通用匹配：找第一个单/双引号包裹的内容
+            match = re.search(r"['\"]([^'\"]+)['\"]", result)
             if match:
                 return match.group(1).strip()
             if result.startswith("{'text':") or result.startswith('{"text":'):
