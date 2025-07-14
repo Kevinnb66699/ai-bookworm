@@ -44,7 +44,7 @@ const CourseDetail: React.FC = () => {
       .catch(() => {
         if (isMounted) {
           setCourse(null);
-          message.error('获取课程详情失败');
+          message.error('Failed to get course details');
         }
       })
       .finally(() => {
@@ -58,7 +58,7 @@ const CourseDetail: React.FC = () => {
       .catch(() => {
         if (isMounted) {
           setWords([]);
-          message.error('获取单词列表失败');
+          message.error('Failed to get word list');
         }
       })
       .finally(() => {
@@ -77,7 +77,7 @@ const CourseDetail: React.FC = () => {
       setWords(Array.isArray(data) ? data : []);
     } catch {
       setWords([]);
-      message.error('刷新单词列表失败');
+      message.error('Failed to refresh word list');
     } finally {
       setWordsLoading(false);
     }
@@ -86,20 +86,20 @@ const CourseDetail: React.FC = () => {
   const handleDelete = async () => {
     try {
       await deleteCourse(courseId);
-      message.success('课程删除成功');
+      message.success('Course deleted successfully');
       navigate('/courses');
     } catch (error: any) {
-      console.error('删除课程失败:', error);
-      message.error('删除课程失败');
+      console.error('Failed to delete course:', error);
+      message.error('Failed to delete course');
     }
   };
 
   if (courseLoading && !course) {
-    return <div>加载课程信息中...</div>;
+    return <div>Loading course information...</div>;
   }
 
   if (!course) {
-    return <div>课程不存在</div>;
+    return <div>Course does not exist</div>;
   }
 
   return (
@@ -112,18 +112,18 @@ const CourseDetail: React.FC = () => {
               type="primary" 
               onClick={() => navigate(`/courses/${courseId}/edit`)}
             >
-              编辑课程
+              Edit Course
             </Button>
             <Popconfirm
-              title="确定要删除这个课程吗？"
-              description="删除后将无法恢复，包括所有单词和课文数据"
+              title="Are you sure you want to delete this course?"
+              description="This action cannot be undone, including all words and texts."
               onConfirm={handleDelete}
-              okText="确定"
-              cancelText="取消"
+              okText="Yes"
+              cancelText="Cancel"
             >
               <Button danger>
-              删除课程
-            </Button>
+                Delete Course
+              </Button>
             </Popconfirm>
           </Space>
         }
@@ -131,9 +131,9 @@ const CourseDetail: React.FC = () => {
         <p>{course.description}</p>
       </Card>
       <Tabs defaultActiveKey="words" style={{ marginTop: 16 }}>
-        <TabPane tab="单词列表" key="words">
+        <TabPane tab="Word List" key="words">
           {wordsLoading ? (
-            <div>加载单词中...</div>
+            <div>Loading words...</div>
           ) : (
             <WordList 
               courseId={courseId}
@@ -142,18 +142,21 @@ const CourseDetail: React.FC = () => {
             />
           )}
         </TabPane>
-        <TabPane tab="单词练习" key="word-practice">
+        <TabPane tab="Word Practice" key="word-practice">
           <WordPractice courseId={courseId} />
         </TabPane>
-        <TabPane tab="文本列表" key="texts">
+        <TabPane tab="Text List" key="texts">
           <TextList courseId={courseId} />
         </TabPane>
-        <TabPane tab="文本练习" key="text-practice">
+        <TabPane tab="Text Practice" key="text-practice">
           <TextPractice courseId={courseId} />
         </TabPane>
-        <TabPane tab="学习进度" key="progress">
+        <TabPane tab="Progress" key="progress">
           <ProgressComponent courseId={courseId} />
         </TabPane>
+        {/* <TabPane tab="Review Reminder" key="reminder">
+          <ReviewReminder courseId={courseId} />
+        </TabPane> */}
       </Tabs>
     </div>
   );
