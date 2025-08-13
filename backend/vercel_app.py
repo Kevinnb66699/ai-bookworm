@@ -149,13 +149,13 @@ except Exception as e:
     def health_check():
         return jsonify({
             'status': 'error', 
-            'message': f'应用初始化失败: {str(e)}',
+            'message': '应用初始化失败',
             'service': 'ai-bookworm-backend'
         }), 500
     
     @app.route('/health')
     def health():
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return jsonify({'status': 'error'}), 500
 
 # 确保应用可以被 Vercel 发现
 application = app
