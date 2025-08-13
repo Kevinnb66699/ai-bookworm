@@ -228,7 +228,7 @@ class RecitationAnalysisService:
             for item in content_obj:
                 if isinstance(item, dict) and 'text' in item:
                     pieces.append(str(item.get('text', '')))
-        else:
+                else:
                     pieces.append(str(item))
             return "\n".join(pieces)
         if isinstance(content_obj, dict):
