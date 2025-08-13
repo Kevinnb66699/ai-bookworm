@@ -13,6 +13,36 @@ export interface RecitationResult {
   similarity: number;
 }
 
+export interface TextSegment {
+  index: number;
+  content: string;
+  sentences: string[];
+}
+
+export interface ErrorSegment {
+  segment_index: number;
+  error_type: string;
+  suggestion: string;
+  original_content: string;
+}
+
+export interface AnalysisResult {
+  score: number;
+  similarity: number;
+  evaluation_text: string;
+  segments: TextSegment[];
+  error_segments: ErrorSegment[];
+  dashscope_analysis: any;
+}
+
+export interface SegmentResponse {
+  text_id: number;
+  original_text: string;
+  segments: TextSegment[];
+  segment_count: number;
+  generated_at: string;
+}
+
 export const textRecitationService = {
   // 上传图片并识别文字
   uploadImage: async (file: File): Promise<TextRecitation> => {
@@ -60,6 +90,20 @@ export const textRecitationService = {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
+  },
+
+  // 智能分析背诵
+  analyzeRecitation: async (id: number, recitedText: string): Promise<AnalysisResult> => {
+    const response = await apiClient.post(`/api/text-recitation/${id}/analyze`, {
+      recited_text: recitedText
+    });
+    return response.data.analysis;
+  },
+
+  // 获取课文分段
+  getTextSegments: async (id: number): Promise<SegmentResponse> => {
+    const response = await apiClient.get(`/api/text-recitation/${id}/segments`);
     return response.data;
   },
 }; 

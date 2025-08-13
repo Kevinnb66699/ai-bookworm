@@ -13,6 +13,8 @@ class Practice(db.Model):
     
     # 关联到课文（用于课文填空和完整默写）
     text_id = db.Column(db.Integer, db.ForeignKey('texts.id'))
+    # 关联到文本背诵（用于“拍照背诵”场景）
+    text_recitation_id = db.Column(db.Integer, db.ForeignKey('text_recitations.id'))
     
     def to_dict(self):
         return {
@@ -22,5 +24,6 @@ class Practice(db.Model):
             'practice_type': self.practice_type,
             'score': self.score,
             'mistakes': self.mistakes,
-            'text_id': self.text_id
+            'text_id': self.text_id,
+            'text_recitation_id': self.text_recitation_id
         } 

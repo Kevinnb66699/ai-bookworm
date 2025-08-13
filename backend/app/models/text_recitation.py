@@ -10,6 +10,11 @@ class TextRecitation(db.Model):
     create_time = db.Column(db.DateTime, default=datetime.utcnow)
     update_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # 预计算并缓存的分段结果
+    segments_cache = db.Column(db.JSON)  # [{ index, content, sentences }]
+    segment_count = db.Column(db.Integer)
+    segments_cached_at = db.Column(db.DateTime)
+    
     def to_dict(self):
         return {
             'id': self.id,

@@ -1,8 +1,8 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.text_recitation import TextRecitation
 from app.services.ocr_service import ocr_service
-from app.services.recitation_service import calculate_similarity
+from app.services.recitation_service import calculate_similarity, recitation_analysis_service
 from app.services.speech_service import speech_service
 from app import db
 import tempfile
@@ -14,6 +14,8 @@ import oss2
 import uuid
 import json
 import re
+from datetime import datetime
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,26 @@ def upload_to_oss(local_file_path):
     with open(local_file_path, 'rb') as fileobj:
         bucket.put_object(oss_file_name, fileobj)
     return f"https://{OSS_BUCKET_NAME}.oss-cn-shanghai.aliyuncs.com/{oss_file_name}"
+
+
+def _clean_text_content(raw: str) -> str:
+    """清理课文/识别文本中的特殊符号和注音，保留中英文与常用标点。
+    - 去除半角/全角括号中的注音或说明，如 (di)、（yi）
+    - 去除不常见控制字符
+    - 规范空白
+    """
+    if not raw:
+        return ''
+    text = str(raw)
+    # 去除括号内的内容（常见为拼音或注释），长度限制避免误删整段
+    text = re.sub(r"\([^)]{1,12}\)", "", text)
+    text = re.sub(r"（[^）]{1,12}）", "", text)
+    # 去除不可见控制字符
+    text = re.sub(r"[\u0000-\u001F\u007F]", "", text)
+    # 统一换行与空白
+    text = text.replace('\r', ' ').replace('\n', ' ')
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
 @bp.route('/api/text-recitation', methods=['POST'])
 @jwt_required()
@@ -86,11 +108,8 @@ def create_text_recitation():
                 content = ' '.join(str(item) for item in ocr_result)
             else:
                 content = ""
-            # 确保content是字符串并清理格式
-            content = str(content).strip()
-            if content:
-                content = content.replace('\\n', ' ').replace('\n', ' ').replace('\r', ' ')
-                content = ' '.join(content.split())
+            # 确保content是字符串并清理格式 + 去特殊符号/注音
+            content = _clean_text_content(str(content))
             
             logger.info(f"处理后的内容: {content}")
             
@@ -102,15 +121,52 @@ def create_text_recitation():
             # 即使OCR失败，也创建一个包含错误信息的记录
             content = f"Simulated text content (OCR temporarily unavailable): Spring has arrived, and everything is coming back to life. The grass is sprouting from the soil, tender and green. Peach blossoms are blushing, and willow trees are swaying their long green braids. Please note: This is simulated content, actual recognition requires OCR service configuration."
         
-        # 保存到数据库
+        # 预计算分段并缓存
+        # 先保存文本，分段放到后台线程处理，避免上传阻塞超时
         text_recitation = TextRecitation(
             user_id=user_id,
-            content=content
+            content=content,
+            segments_cache=None,
+            segment_count=0,
+            segments_cached_at=None
         )
         db.session.add(text_recitation)
         db.session.commit()
+
+        # 启动后台线程预计算分段并写回缓存
+        try:
+            app_obj = current_app._get_current_object()
+
+            def _segment_and_update(text_id: int, text_content: str):
+                try:
+                    segments_local = recitation_analysis_service.segment_text(text_content)
+                    with app_obj.app_context():
+                        tr = TextRecitation.query.get(text_id)
+                        if tr:
+                            tr.segments_cache = segments_local
+                            tr.segment_count = len(segments_local) if segments_local else 0
+                            tr.segments_cached_at = datetime.utcnow()
+                            db.session.commit()
+                except Exception:
+                    with app_obj.app_context():
+                        tr = TextRecitation.query.get(text_id)
+                        if tr:
+                            tr.segments_cache = tr.segments_cache or []
+                            tr.segment_count = len(tr.segments_cache)
+                            tr.segments_cached_at = datetime.utcnow()
+                            db.session.commit()
+
+            threading.Thread(
+                target=_segment_and_update,
+                args=(text_recitation.id, content),
+                daemon=True
+            ).start()
+        except Exception as e:
+            logger.warning(f"启动后台分段线程失败: {e}")
         
-        return jsonify(text_recitation.to_dict()), 201
+        data = text_recitation.to_dict()
+        data.update({"segmentationStatus": "processing"})
+        return jsonify(data), 201
     except Exception as e:
         db.session.rollback()
         logger.error(f"创建文本朗诵记录失败: {str(e)}")
@@ -211,18 +267,40 @@ def recite_text(id):
             logger.info(f"最终识别文本: {recited_text}")
             logger.info(f"原文内容: {text.content}")
             
+            # 清理特殊符号后再评分，避免注音/括号影响
+            original_clean = _clean_text_content(text.content)
+            recited_clean = _clean_text_content(recited_text)
             # 3. 计算相似度和评分
-            similarity = calculate_similarity(text.content, recited_text)
+            similarity = calculate_similarity(original_clean, recited_clean)
             score = int(similarity * 100)
             logger.info(f"相似度: {similarity}, 得分: {score}")
+
+            # 记录一次背诵练习到历史（用于成绩统计）
+            try:
+                practice = Practice(
+                    user_id=user_id,
+                    practice_type='text_recitation',
+                    score=float(score),
+                    mistakes={
+                        'recitation_id': id,
+                        'similarity': similarity
+                    },
+                    text_id=None,  # 避免与 texts 表的外键冲突
+                    text_recitation_id=id
+                )
+                db.session.add(practice)
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                logger.warning(f"保存背诵成绩历史失败（不影响前端显示）：{e}")
             
             # 如果得分为0，但识别到了内容，给出提示
             if score == 0 and recited_text not in ["未能识别到语音内容", "语音识别失败，无法获取识别结果"]:
                 logger.info(f"得分为0但识别到内容，可能是内容不匹配")
             
             return jsonify({
-                'recited_text': recited_text,
-                'original_text': text.content,
+                'recited_text': recited_clean,
+                'original_text': original_clean,
                 'score': score,
                 'similarity': similarity
             }), 200
@@ -231,7 +309,7 @@ def recite_text(id):
             return jsonify({
                 'error': '语音识别失败',
                 'recited_text': '语音识别过程中发生错误',
-                'original_text': text.content,
+                'original_text': _clean_text_content(text.content),
                 'score': 0,
                 'similarity': 0.0
             }), 200
@@ -259,11 +337,11 @@ def get_recitation_scores(id):
         if not text:
             return jsonify({'error': '课文不存在'}), 404
             
-        # 获取所有背诵记录
+        # 获取该课文（text_recitation_id 维度）的所有背诵记录
         practices = Practice.query.filter_by(
             user_id=user_id,
-            text_id=id,
-            practice_type='text_recitation'
+            practice_type='text_recitation',
+            text_recitation_id=id
         ).order_by(Practice.created_at.desc()).all()
         
         if not practices:
@@ -290,4 +368,97 @@ def get_recitation_scores(id):
         })
     except Exception as e:
         logger.error(f"获取背诵成绩历史失败: {str(e)}", exc_info=True)
-        return jsonify({'error': str(e)}), 500 
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/text-recitation/<int:id>/analyze', methods=['POST'])
+@jwt_required()
+def analyze_recitation(id):
+    """智能分析背诵并生成个性化评价"""
+    try:
+        user_id = get_jwt_identity()
+        text = TextRecitation.query.filter_by(id=id, user_id=user_id).first()
+        
+        if not text:
+            return jsonify({'error': '课文不存在'}), 404
+        
+        # 检查请求数据
+        data = request.get_json()
+        if not data or 'recited_text' not in data:
+            return jsonify({'error': '缺少背诵文本'}), 400
+        
+        recited_text = data['recited_text']
+        if not recited_text or not recited_text.strip():
+            return jsonify({'error': '背诵文本不能为空'}), 400
+        
+        logger.info(f"开始智能分析背诵，课文ID: {id}")
+        
+        # 获取用户家长音色风格（如果存在）
+        # 由于我们还没有实现音色功能，暂时传入None
+        user_voice_style = None
+        
+        # 取缓存的分段，确保与“查看分段”一致
+        preset_segments = text.segments_cache if hasattr(text, 'segments_cache') else None
+
+        # 调用智能分析服务（传入预分段）
+        analysis_result = recitation_analysis_service.analyze_recitation(
+            original_text=text.content,
+            recited_text=recited_text,
+            user_voice_style=user_voice_style,
+            preset_segments=preset_segments
+        )
+        
+        # 可以选择保存分析结果到数据库
+        # 这里暂时只返回结果，稍后可以添加数据库保存逻辑
+        
+        logger.info(f"智能分析完成，得分: {analysis_result['score']}")
+        
+        return jsonify({
+            'analysis': analysis_result,
+            'text_id': id,
+            'original_text': text.content,
+            'analyzed_at': datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"智能分析背诵失败: {str(e)}", exc_info=True)
+        return jsonify({'error': f'分析失败: {str(e)}'}), 500
+
+@bp.route('/api/text-recitation/<int:id>/segments', methods=['GET'])
+@jwt_required()
+def get_text_segments(id):
+    """获取课文分段信息"""
+    try:
+        user_id = get_jwt_identity()
+        text = TextRecitation.query.filter_by(id=id, user_id=user_id).first()
+        
+        if not text:
+            return jsonify({'error': '课文不存在'}), 404
+        
+        logger.info(f"获取课文分段，课文ID: {id}")
+        
+        # 优先返回缓存
+        segments = text.segments_cache
+        if not segments:
+            segments = recitation_analysis_service.segment_text(text.content)
+            # 异步/延后更新缓存：此处直接写入，保证后续更快
+            try:
+                text.segments_cache = segments
+                text.segment_count = len(segments) if segments else 0
+                text.segments_cached_at = datetime.utcnow()
+                db.session.commit()
+            except Exception as _:
+                db.session.rollback()
+        
+        logger.info(f"课文分段完成，共{len(segments)}段")
+        
+        return jsonify({
+            'text_id': id,
+            'original_text': text.content,
+            'segments': segments,
+            'segment_count': len(segments),
+            'generated_at': datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"获取课文分段失败: {str(e)}", exc_info=True)
+        return jsonify({'error': f'分段失败: {str(e)}'}), 500 

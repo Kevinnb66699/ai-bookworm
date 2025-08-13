@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Upload, message, List, Typography, Space, Modal, Input, Progress } from 'antd';
-import { CameraOutlined, DeleteOutlined, EditOutlined, AudioOutlined, LoadingOutlined, BarChartOutlined } from '@ant-design/icons';
+import { Card, Button, Upload, message, List, Typography, Space, Modal, Input, Progress, Spin, Collapse } from 'antd';
+import { CameraOutlined, DeleteOutlined, EditOutlined, AudioOutlined, LoadingOutlined, BarChartOutlined, BookOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
-import { textRecitationService, TextRecitation as TextRecitationType, RecitationResult } from '../services/textRecitationService';
+import { textRecitationService, TextRecitation as TextRecitationType, RecitationResult, AnalysisResult, TextSegment } from '../services/textRecitationService';
 import { request } from '../services/request';
 
 const { Title, Text, Paragraph } = Typography;
@@ -18,6 +18,11 @@ const TextRecitation: React.FC = () => {
   const [reciting, setReciting] = useState(false);
   const [currentRecitationId, setCurrentRecitationId] = useState<number | null>(null);
   const [recitationResult, setRecitationResult] = useState<RecitationResult | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [errorDetailVisible, setErrorDetailVisible] = useState(false);
+  const [textSegments, setTextSegments] = useState<TextSegment[]>([]);
+  const [segmentsVisible, setSegmentsVisible] = useState(false);
   const [scoresModalVisible, setScoresModalVisible] = useState(false);
   const [scores, setScores] = useState<{
     current_score: number | null;
@@ -49,6 +54,19 @@ const TextRecitation: React.FC = () => {
       setTextList(prev => [newText, ...prev]);
       message.success('课文识别成功！');
       onSuccess?.('ok');
+
+      // 识别完成后立即请求分段，并在分段完成后自动打开“查看分段”
+      const hideSegLoading = message.loading('正在进行智能分段，请稍候...', 0);
+      try {
+        const segResp = await textRecitationService.getTextSegments(newText.id);
+        setTextSegments(segResp.segments);
+        setSegmentsVisible(true);
+      } catch (segErr) {
+        console.error('获取分段失败:', segErr);
+        message.error('获取分段失败，请稍后在列表中点击“查看分段”重试');
+      } finally {
+        hideSegLoading();
+      }
     } catch (error) {
       message.error('课文识别失败，请重试');
       onError?.(new Error('上传失败'));
@@ -273,13 +291,25 @@ const TextRecitation: React.FC = () => {
       
       setRecitationResult(result);
       
-      // 根据得分给出不同的反馈
-      if (result.score >= 80) {
-        message.success(`背诵评分：${result.score}分 - 太棒了！`);
-      } else if (result.score >= 60) {
-        message.success(`背诵评分：${result.score}分 - 不错哦！`);
-      } else {
-        message.info(`背诵评分：${result.score}分 - 继续努力！`);
+      // 调用智能分析API（带加载提示）
+      try {
+        setAnalysisLoading(true);
+        const analysis = await textRecitationService.analyzeRecitation(targetId, result.recited_text);
+        setAnalysisResult(analysis);
+        // 显示智能评价消息
+        message.success(analysis.evaluation_text);
+      } catch (analysisError) {
+        console.error('智能分析失败:', analysisError);
+        // 如果智能分析失败，显示基础反馈
+        if (result.score >= 80) {
+          message.success(`背诵评分：${result.score}分 - 太棒了！`);
+        } else if (result.score >= 60) {
+          message.success(`背诵评分：${result.score}分 - 不错哦！`);
+        } else {
+          message.info(`背诵评分：${result.score}分 - 继续努力！`);
+        }
+      } finally {
+        setAnalysisLoading(false);
       }
       
     } catch (error) {
@@ -296,13 +326,26 @@ const TextRecitation: React.FC = () => {
   // 关闭结果对话框
   const handleResultClose = () => {
     setRecitationResult(null);
+    setAnalysisResult(null);
     // currentRecitationId 已经在 submitRecitation 中清理了，这里不需要重复清理
+  };
+
+  // 查看课文分段
+  const fetchTextSegments = async (id: number) => {
+    try {
+      const response = await textRecitationService.getTextSegments(id);
+      setTextSegments(response.segments);
+      setSegmentsVisible(true);
+    } catch (error) {
+      message.error('获取课文分段失败');
+    }
   };
 
   // 获取成绩历史
   const fetchScores = async (id: number) => {
     try {
-      const response = await request.get(`/api/text-recitation/${id}/scores`);
+      // 注意：request 的 baseURL 已经包含 /api，这里不要再重复 /api 前缀
+      const response = await request.get(`/text-recitation/${id}/scores`);
       setScores(response.data);
       setScoresModalVisible(true);
     } catch (error) {
@@ -380,6 +423,14 @@ const TextRecitation: React.FC = () => {
                   >
                     查看成绩
                   </Button>
+                  <Button
+                    type="default"
+                    icon={<BookOutlined />}
+                    onClick={() => fetchTextSegments(item.id)}
+                    style={{ marginLeft: 8 }}
+                  >
+                    查看分段
+                  </Button>
                 </>
               ),
               <Button
@@ -440,7 +491,7 @@ const TextRecitation: React.FC = () => {
             关闭
           </Button>
         ]}
-        width={600}
+        width={800}
       >
         {recitationResult && (
           <Space direction="vertical" style={{ width: '100%' }} size="large">
@@ -471,6 +522,67 @@ const TextRecitation: React.FC = () => {
                 </div>
               </div>
             </div>
+            
+            {/* AI智能评价 */}
+            {(analysisLoading || analysisResult) && (
+              <div style={{ 
+                backgroundColor: '#f6ffed', 
+                border: '1px solid #b7eb8f', 
+                borderRadius: '6px', 
+                padding: '16px',
+                marginTop: '16px'
+              }}>
+                <Title level={5} style={{ color: '#52c41a', marginBottom: '8px' }}>
+                  🤖 AI智能评价
+                </Title>
+                {analysisLoading ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Spin size="small" />
+                    <Text style={{ fontSize: '14px' }}>AI 正在生成评价...</Text>
+                  </div>
+                ) : (
+                  <Text style={{ fontSize: '16px', lineHeight: 1.6 }}>
+                    {analysisResult?.evaluation_text}
+                  </Text>
+                )}
+              </div>
+            )}
+
+            {/* 错误段落提醒 + 详情 */}
+            {analysisResult && analysisResult.error_segments && analysisResult.error_segments.length > 0 && (
+              <div style={{ 
+                backgroundColor: '#fff7e6', 
+                border: '1px solid #ffd591', 
+                borderRadius: '6px', 
+                padding: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Title level={5} style={{ color: '#fa8c16', marginBottom: 0 }}>
+                    📍 重点练习段落
+                  </Title>
+                  <Button type="link" onClick={() => setErrorDetailVisible(v => !v)}>
+                    {errorDetailVisible ? '收起详情' : '查看详情'}
+                  </Button>
+                </div>
+                {analysisResult.error_segments.map((errorSeg, index) => (
+                  <div key={index} style={{ marginBottom: '8px' }}>
+                    <Text strong>第{errorSeg.segment_index}段：</Text>
+                    <Text style={{ color: '#666' }}>{errorSeg.suggestion}</Text>
+                  </div>
+                ))}
+                {errorDetailVisible && (
+                  <div style={{ marginTop: 12 }}>
+                    {(analysisResult.segments || []).filter(seg => analysisResult.error_segments.some(es => es.segment_index === seg.index)).map(seg => (
+                      <Card key={seg.index} size="small" title={`第 ${seg.index} 段原文`} style={{ marginBottom: 8 }}>
+                        <Paragraph style={{ marginBottom: 8 }}>{seg.content}</Paragraph>
+                        <div style={{ fontSize: 12, color: '#999' }}>句子：{seg.sentences.join(' | ')}</div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div>
               <Title level={5}>原文</Title>
               <Paragraph>{recitationResult.original_text}</Paragraph>
@@ -498,7 +610,7 @@ const TextRecitation: React.FC = () => {
         {scores && (
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             <div>
-              <Title level={5}>当前成绩</Title>
+              <Title level={5}>最近成绩</Title>
               <Progress
                 type="circle"
                 percent={scores.current_score || 0}
@@ -510,7 +622,13 @@ const TextRecitation: React.FC = () => {
               <Progress
                 type="circle"
                 percent={scores.best_score || 0}
-                status="success"
+                strokeColor={
+                  (scores.best_score || 0) >= 80
+                    ? '#52c41a'
+                    : (scores.best_score || 0) >= 60
+                    ? '#faad14'
+                    : '#ff4d4f'
+                }
               />
             </div>
             <div>
@@ -533,6 +651,38 @@ const TextRecitation: React.FC = () => {
             </div>
           </Space>
         )}
+      </Modal>
+
+      {/* 课文分段对话框 */}
+      <Modal
+        title="课文分段"
+        open={segmentsVisible}
+        onCancel={() => setSegmentsVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setSegmentsVisible(false)}>
+            关闭
+          </Button>
+        ]}
+        width={700}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <div>
+            <Text>系统智能将课文分为 <Text strong>{textSegments.length}</Text> 个段落，便于分段背诵练习：</Text>
+          </div>
+          {textSegments.map((segment, index) => (
+            <Card 
+              key={segment.index} 
+              size="small" 
+              title={`第 ${segment.index} 段`}
+              style={{ marginBottom: '12px' }}
+            >
+              <Paragraph>{segment.content}</Paragraph>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                包含句子：{segment.sentences.join(' | ')}
+              </div>
+            </Card>
+          ))}
+        </Space>
       </Modal>
     </div>
   );

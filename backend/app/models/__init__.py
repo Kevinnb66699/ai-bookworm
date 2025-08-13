@@ -12,6 +12,8 @@ from .practice_progress import PracticeProgress
 from .review_plan import ReviewPlan
 from .reminder import Reminder
 from .text_recitation import TextRecitation
+from .parent_voice import ParentVoice
+from .recitation_evaluation import RecitationEvaluation
 
 # 确保导出所有模型
-__all__ = ['User', 'Course', 'Progress', 'Word', 'Review', 'Practice', 'Text', 'WordPractice', 'PracticeProgress', 'ReviewPlan', 'Reminder', 'TextRecitation'] 
+__all__ = ['User', 'Course', 'Progress', 'Word', 'Review', 'Practice', 'Text', 'WordPractice', 'PracticeProgress', 'ReviewPlan', 'Reminder', 'TextRecitation', 'ParentVoice', 'RecitationEvaluation'] 
