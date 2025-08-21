@@ -143,7 +143,8 @@ class SpeechService:
             "language": "zh-CN"
         }
         
-        response = requests.post(url, headers=headers, json=data, timeout=30)
+        # 增加超时时间，避免长音频/网络波动导致的写入或读取超时
+        response = requests.post(url, headers=headers, json=data, timeout=120)
         
         if response.status_code == 200:
             result = response.json()
@@ -272,7 +273,8 @@ class SpeechService:
             }
         }
         
-        response = requests.post(url, headers=headers, json=data, timeout=30)
+        # 增加超时时间，避免长音频上传/识别超时
+        response = requests.post(url, headers=headers, json=data, timeout=120)
         
         if response.status_code == 200:
             result = response.json()

@@ -280,6 +280,12 @@ def recite_text(id):
             return jsonify({'error': error_msg}), 400
         try:
             # 直接本地识别
+            # 识别前记录文件大小，便于排查超时
+            try:
+                file_size = os.path.getsize(temp_path)
+            except Exception:
+                file_size = -1
+            logger.info(f"开始调用语音识别，文件大小: {file_size} bytes")
             recited_text = speech_service.recognize(temp_path)
             logger.info(f"识别结果: {recited_text}")
             
