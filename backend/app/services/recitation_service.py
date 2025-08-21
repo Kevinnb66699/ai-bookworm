@@ -292,7 +292,7 @@ class RecitationAnalysisService:
             score=score,
             segments=segments,
             error_segments=error_segments,
-            voice_style=user_voice_style,
+            voice_style=None,
         )
         
         return {
@@ -324,10 +324,7 @@ class RecitationAnalysisService:
         try:
             # 根据家长音色风格调整评价语句
             style_prompt = ""
-            if voice_style:
-                tone_style = voice_style.get('tone_style', '温和')
-                vocabulary_style = voice_style.get('vocabulary_style', '口语化')
-                style_prompt = f"请使用{tone_style}的语调，{vocabulary_style}的表达方式，"
+            # 暂停家长风格注入
             
             url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
             
