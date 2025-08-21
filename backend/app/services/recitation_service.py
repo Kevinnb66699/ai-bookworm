@@ -110,8 +110,6 @@ class RecitationAnalysisService:
     
     def __init__(self):
         self.api_key = os.environ.get('DASHSCOPE_API_KEY')
-        # 是否启用DashScope分段（默认关闭以提升稳定性）
-        self.enable_dashscope_segment = os.environ.get('ENABLE_DASHSCOPE_SEGMENT', '0') == '1'
         if not self.api_key:
             logger.warning("DASHSCOPE_API_KEY未配置，智能评价功能将不可用")
     
@@ -125,9 +123,9 @@ class RecitationAnalysisService:
         Returns:
             list: 分段结果 [{"index": 1, "content": "段落内容", "sentences": ["句子1", "句子2"]}]
         """
-        if not self.api_key or not self.enable_dashscope_segment:
-            # 无API或禁用远端分段时，使用本地规则分段
-            return self._rule_based_segment_text(text)
+        if not self.api_key:
+            logger.info("DashScope未配置，使用简单分段")
+            return self._simple_segment_text(text)
         
         try:
             url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
@@ -137,6 +135,7 @@ class RecitationAnalysisService:
                 'Content-Type': 'application/json'
             }
             
+            logger.info(f"DashScope分段请求：model=qwen-turbo, text_len={len(text)}")
             prompt = f"""请将以下课文（可能为中文或英文）按逻辑分段，每段包含2-3个句子。
 严格要求：
 1. 保持语义完整；
@@ -173,6 +172,7 @@ class RecitationAnalysisService:
 
                     # 统一提取文本内容（content 可能为 str/list/dict）
                     content_text = self._extract_text_from_dashscope_content(raw_content)
+                    logger.info(f"DashScope分段原始content片段: {str(content_text)[:120]}")
 
                     # 解析JSON，兼容带代码块/额外文字的情况
                     segments = self._parse_segments_from_text(content_text)
@@ -181,66 +181,51 @@ class RecitationAnalysisService:
                     else:
                         logger.warning(f"DashScope分段结果解析失败，使用简单分段，片段: {str(content_text)[:200]}")
 
-            logger.warning("DashScope分段失败，使用本地分段")
-            return self._rule_based_segment_text(text)
+            else:
+                try:
+                    text_snippet = response.text[:200]
+                except Exception:
+                    text_snippet = '<no body>'
+                logger.warning(f"DashScope分段HTTP失败: {response.status_code} {text_snippet}")
+            logger.warning("DashScope分段失败，使用简单分段")
+            return self._simple_segment_text(text)
             
         except Exception as e:
             logger.error(f"DashScope分段出错: {str(e)}")
-            return self._rule_based_segment_text(text)
+            return self._simple_segment_text(text)
     
-    def _rule_based_segment_text(self, text: str) -> list:
-        """稳定的本地规则分段：
-        - 中英文标点分句，保留句末标点
-        - 合并过短句子，控制每段2-3句
-        - 兼容连续标点/空白
-        """
-        if not text:
-            return []
-        raw = str(text)
-        # 规范空白
-        raw = raw.replace('\r', ' ').replace('\n', ' ')
-        raw = re.sub(r"\s+", " ", raw).strip()
-
-        # 将文本按标点切分并保留分隔符
-        tokens = re.split(r"([。！？；.!?;])", raw)
-        # 组合成句子：内容 + 标点
-        sentences: list[str] = []
-        for i in range(0, len(tokens), 2):
-            content = tokens[i].strip()
-            punct = tokens[i+1] if i + 1 < len(tokens) else ''
-            if not content:
-                continue
-            sentence = content + (punct if punct else ('。' if any('\u4e00' <= ch <= '\u9fff' for ch in content) else '.'))
-            sentences.append(sentence)
-
-        # 合并过短句子（<6个汉字或<12个字符）
-        merged: list[str] = []
-        buffer = ''
-        for s in sentences:
-            s_len = len(s)
-            if s_len < 12:  # 经验阈值
-                buffer += (' ' + s if buffer else s)
-                continue
-            if buffer:
-                merged.append(buffer)
-                buffer = ''
-            merged.append(s)
-        if buffer:
-            merged.append(buffer)
-
-        # 每2-3句成段
-        segments: list[dict] = []
-        seg_idx = 1
-        for i in range(0, len(merged), 3):
-            seg_sents = merged[i:i+3]
-            content = ' '.join(seg_sents)
+    def _simple_segment_text(self, text: str) -> list:
+        """简单的文本分段方法（备用）"""
+        # 支持中英文标点的分句：中文（。！？；）与英文（.!?;）
+        sentences = re.split(r'[。！？；.!?;]+', text)
+        sentences = [s.strip() for s in sentences if s.strip()]
+        
+        segments = []
+        segment_index = 1
+        
+        # 每2-3句组成一段
+        for i in range(0, len(sentences), 3):
+            segment_sentences = sentences[i:i+3]
+            # 按文本内容选择拼接标点：中文优先使用 '。'
+            use_cn_punct = any('\u4e00' <= ch <= '\u9fff' for ch in text)
+            joiner = '。' if use_cn_punct else '. '
+            content = joiner.join(segment_sentences)
             if content:
+                if use_cn_punct:
+                    if not content.endswith('。'):
+                        content += '。'
+                else:
+                    if not content.endswith('.'):
+                        content += '.'
+                
                 segments.append({
-                    'index': seg_idx,
-                    'content': content,
-                    'sentences': seg_sents
+                    "index": segment_index,
+                    "content": content,
+                    "sentences": segment_sentences
                 })
-                seg_idx += 1
+                segment_index += 1
+        
+        logger.info(f"使用简单分段完成：共{len(segments)}段")
         return segments
 
     def _extract_text_from_dashscope_content(self, content_obj) -> str:
