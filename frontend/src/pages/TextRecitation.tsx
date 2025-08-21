@@ -20,6 +20,15 @@ const TextRecitation: React.FC = () => {
   const [recitationResult, setRecitationResult] = useState<RecitationResult | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [browserTtsEnabled] = useState(true);
+
+  // 统一的分数配色：<60 红色，60-79 橙色，>=80 绿色
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return '#52c41a';
+    if (score >= 60) return '#faad14';
+    return '#ff4d4f';
+  };
   const [errorDetailVisible, setErrorDetailVisible] = useState(false);
   const [textSegments, setTextSegments] = useState<TextSegment[]>([]);
   const [segmentsVisible, setSegmentsVisible] = useState(false);
@@ -501,7 +510,7 @@ const TextRecitation: React.FC = () => {
                 <Progress
                   type="circle"
                   percent={recitationResult.score}
-                  status={recitationResult.score >= 80 ? 'success' : 'normal'}
+                  strokeColor={getScoreColor(recitationResult.score)}
                 />
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ 
@@ -541,9 +550,21 @@ const TextRecitation: React.FC = () => {
                     <Text style={{ fontSize: '14px' }}>AI 正在生成评价...</Text>
                   </div>
                 ) : (
-                  <Text style={{ fontSize: '16px', lineHeight: 1.6 }}>
-                    {analysisResult?.evaluation_text}
-                  </Text>
+                  <>
+                    <Text style={{ fontSize: '16px', lineHeight: 1.6 }}>
+                      {analysisResult?.evaluation_text}
+                    </Text>
+                    {analysisResult?.voice_audio && (
+                      <div style={{ marginTop: 12 }}>
+                        <audio
+                          ref={audioRef}
+                          src={analysisResult.voice_audio}
+                          controls
+                          autoPlay
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -614,7 +635,7 @@ const TextRecitation: React.FC = () => {
               <Progress
                 type="circle"
                 percent={scores.current_score || 0}
-                status={scores.current_score && scores.current_score >= 80 ? 'success' : 'normal'}
+                strokeColor={getScoreColor(scores.current_score || 0)}
               />
             </div>
             <div>
@@ -622,13 +643,7 @@ const TextRecitation: React.FC = () => {
               <Progress
                 type="circle"
                 percent={scores.best_score || 0}
-                strokeColor={
-                  (scores.best_score || 0) >= 80
-                    ? '#52c41a'
-                    : (scores.best_score || 0) >= 60
-                    ? '#faad14'
-                    : '#ff4d4f'
-                }
+                strokeColor={getScoreColor(scores.best_score || 0)}
               />
             </div>
             <div>
@@ -642,6 +657,7 @@ const TextRecitation: React.FC = () => {
                         type="circle"
                         percent={item.score}
                         width={40}
+                        strokeColor={getScoreColor(item.score)}
                       />
                       <span>{item.date}</span>
                     </Space>

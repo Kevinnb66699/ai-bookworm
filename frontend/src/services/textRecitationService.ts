@@ -33,6 +33,7 @@ export interface AnalysisResult {
   segments: TextSegment[];
   error_segments: ErrorSegment[];
   dashscope_analysis: any;
+  voice_audio?: string; // data:audio/mpeg;base64,...
 }
 
 export interface SegmentResponse {

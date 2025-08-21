@@ -5,6 +5,7 @@ import os
 import json
 import requests
 import logging
+from .tts_service import tts_service
 
 jieba.initialize()  # 预热分词模型，避免首次请求慢
 logger = logging.getLogger(__name__)
@@ -307,7 +308,9 @@ class RecitationAnalysisService:
                     'length': len(recited_text),
                     'word_count': len(recited_text.split())
                 }
-            }
+            },
+            # 可选：在 Phase 2 中返回家长音色风格与TTS音频（若存在）
+            'voice_audio': None
         }
     
     def _generate_evaluation(self, original_text: str, recited_text: str, score: int, segments: list, error_segments: list, voice_style: dict = None) -> str:

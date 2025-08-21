@@ -106,7 +106,7 @@ def create_app():
             return response
 
     # 注册蓝图
-    from .routes import auth, course, word, review, text_recitation, reminder, text
+    from .routes import auth, course, word, review, text_recitation, reminder, text, parent_voice
     app.register_blueprint(auth.bp)
     app.register_blueprint(course.bp)
     app.register_blueprint(word.bp)
@@ -114,6 +114,7 @@ def create_app():
     app.register_blueprint(text_recitation.bp)
     app.register_blueprint(reminder.bp)
     app.register_blueprint(text.bp)
+    app.register_blueprint(parent_voice.bp)
     
     return app
 
