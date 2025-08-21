@@ -243,10 +243,50 @@ def update_text_recitation(id):
         if not content:
             return jsonify({'error': '内容不能为空'}), 400
             
+        # 更新内容并清空旧的分段缓存
         text.content = content
+        try:
+            text.segments_cache = None
+            text.segment_count = 0
+            text.segments_cached_at = None
+        except Exception:
+            pass
         db.session.commit()
-        
-        return jsonify(text.to_dict()), 200
+
+        # 异步重新分段并写回缓存
+        try:
+            app_obj = current_app._get_current_object()
+
+            def _segment_and_update(text_id: int, text_content: str):
+                try:
+                    segments_local = recitation_analysis_service.segment_text(text_content)
+                    with app_obj.app_context():
+                        tr = TextRecitation.query.get(text_id)
+                        if tr:
+                            tr.segments_cache = segments_local
+                            tr.segment_count = len(segments_local) if segments_local else 0
+                            tr.segments_cached_at = datetime.utcnow()
+                            db.session.commit()
+                except Exception:
+                    with app_obj.app_context():
+                        tr = TextRecitation.query.get(text_id)
+                        if tr:
+                            tr.segments_cache = tr.segments_cache or []
+                            tr.segment_count = len(tr.segments_cache)
+                            tr.segments_cached_at = datetime.utcnow()
+                            db.session.commit()
+
+            threading.Thread(
+                target=_segment_and_update,
+                args=(text.id, content),
+                daemon=True
+            ).start()
+        except Exception as e:
+            logger.warning(f"启动后台分段线程失败(编辑后重分段): {e}")
+
+        data = text.to_dict()
+        data.update({"segmentationStatus": "processing"})
+        return jsonify(data), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
