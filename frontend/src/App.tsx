@@ -11,6 +11,7 @@ import {
   CrownOutlined,
 } from '@ant-design/icons';
 import Home from './pages/Home';
+// import ParentVoice from './pages/ParentVoice'; // 暂时隐藏家长音色页面
 import Login from './pages/Login';
 import Register from './pages/Register';
 import CourseList from './pages/CourseList';
@@ -92,6 +93,13 @@ const AppContent: React.FC = () => {
       label: '课文背诵',
       onClick: () => navigate('/text-recitation'),
     },
+    // 保留家长音色菜单项（暂时隐藏）
+    // {
+    //   key: 'parent-voice',
+    //   icon: <SettingOutlined />,
+    //   label: '家长音色',
+    //   onClick: () => navigate('/parent-voice'),
+    // },
   ];
 
   if (!isLoggedIn) {
@@ -139,6 +147,8 @@ const AppContent: React.FC = () => {
           <Route path="/text-recitation" element={<TextRecitation />} />
           <Route path="/profile" element={<div>个人信息页面（开发中）</div>} />
           <Route path="/settings" element={<div>设置页面（开发中）</div>} />
+          {/* 保留家长音色路由（暂时隐藏） */}
+          {/* <Route path="/parent-voice" element={<ParentVoice />} /> */}
         </Routes>
       </Content>
       <Footer style={{ textAlign: 'center' }}>
