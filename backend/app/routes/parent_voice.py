@@ -170,7 +170,8 @@ def upload_parent_voice():
     except Exception as e:
         db.session.rollback()
         logger.error(f"上传家长音色失败: {e}")
-        return jsonify({'error': '上传失败'}), 500
+        # 将详细错误返回，便于排查（前端可提示简化信息）
+        return jsonify({'error': '上传失败', 'detail': str(e)}), 500
     finally:
         try:
             if os.path.exists(local_path):
