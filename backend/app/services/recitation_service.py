@@ -159,11 +159,12 @@ class RecitationAnalysisService:
                     ]
                 },
                 "parameters": {
-                    "result_format": "json"
+                    "result_format": "message"
                 }
             }
             
-            response = requests.post(url, headers=headers, json=data, timeout=30)
+            # 提高超时，避免长文本/网络波动引起的提前回退
+            response = requests.post(url, headers=headers, json=data, timeout=120)
             
             if response.status_code == 200:
                 result = response.json()
@@ -180,6 +181,11 @@ class RecitationAnalysisService:
                         return segments
                     else:
                         logger.warning(f"DashScope分段结果解析失败，使用简单分段，片段: {str(content_text)[:200]}")
+                else:
+                    try:
+                        logger.warning(f"DashScope分段200但结构异常: keys={list(result.keys())} snippet={str(result)[:200]}")
+                    except Exception:
+                        logger.warning("DashScope分段200但结构异常，且结果无法序列化")
 
             else:
                 try:
