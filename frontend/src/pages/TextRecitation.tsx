@@ -353,9 +353,8 @@ const TextRecitation: React.FC = () => {
   // 获取成绩历史
   const fetchScores = async (id: number) => {
     try {
-      // 注意：request 的 baseURL 已经包含 /api，这里不要再重复 /api 前缀
-      const response = await request.get(`/text-recitation/${id}/scores`);
-      setScores(response.data);
+      const response = await textRecitationService.getScores(id);
+      setScores(response);
       setScoresModalVisible(true);
     } catch (error) {
       message.error('获取成绩历史失败');

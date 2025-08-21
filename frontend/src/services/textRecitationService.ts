@@ -107,4 +107,10 @@ export const textRecitationService = {
     const response = await apiClient.get(`/api/text-recitation/${id}/segments`);
     return response.data;
   },
+
+  // 获取成绩历史（与其他接口保持同一客户端与前缀，避免CORS分歧）
+  getScores: async (id: number): Promise<{ current_score: number | null; best_score: number | null; history: Array<{ score: number; date: string }>; }> => {
+    const response = await apiClient.get(`/api/text-recitation/${id}/scores`);
+    return response.data;
+  },
 }; 
