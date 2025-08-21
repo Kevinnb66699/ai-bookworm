@@ -158,7 +158,7 @@ class RecitationAnalysisService:
                     ]
                 },
                 "parameters": {
-                    "result_format": "message"
+                    "result_format": "json"
                 }
             }
             
@@ -177,7 +177,7 @@ class RecitationAnalysisService:
                     if segments:
                         return segments
                     else:
-                        logger.warning("DashScope分段结果解析失败，使用简单分段")
+                        logger.warning(f"DashScope分段结果解析失败，使用简单分段，片段: {str(content_text)[:200]}")
 
             logger.warning("DashScope分段失败，使用简单分段")
             return self._simple_segment_text(text)
@@ -240,21 +240,48 @@ class RecitationAnalysisService:
         """从返回的文本中解析JSON数组（容错处理代码块/前后缀）"""
         if not content_text:
             return []
-        text = content_text.strip()
-        # 去掉可能的代码块标记 ```json ... ```
-        text = re.sub(r"^```(json)?", "", text, flags=re.IGNORECASE).strip()
+        text = str(content_text).strip()
+        # 一些常见清洗
+        text = text.replace('\r', ' ').replace('\n', ' ').strip()
+        # 去掉代码块标记
+        text = re.sub(r"^```(?:json|JSON)?", "", text).strip()
         text = re.sub(r"```$", "", text).strip()
-        # 直接尝试解析
-        try:
-            parsed = json.loads(text)
-            if isinstance(parsed, list):
-                return parsed
-        except Exception:
-            pass
-        # 从文本中提取第一个JSON数组片段
-        m = re.search(r"\[([\s\S]*?)\]", text)
-        if m:
-            candidate = f"[{m.group(1)}]"
+        # 去掉诸如"以下是JSON:"前缀
+        text = re.sub(r"^.*?\[", "[", text, flags=re.DOTALL)
+        # 尝试直接解析
+        for candidate in [text]:
+            try:
+                parsed = json.loads(candidate)
+                if isinstance(parsed, list):
+                    return parsed
+            except Exception:
+                pass
+        # 进一步容错：提取首个方括号数组并修复常见问题
+        # 提取第一个以'['开头到匹配']'的片段（简单平衡处理）
+        def extract_array(src: str) -> str | None:
+            start = src.find('[')
+            if start == -1:
+                return None
+            depth = 0
+            for i, ch in enumerate(src[start:], start=start):
+                if ch == '[':
+                    depth += 1
+                elif ch == ']':
+                    depth -= 1
+                    if depth == 0:
+                        return src[start:i+1]
+            return None
+
+        array_text = extract_array(text)
+        if array_text:
+            candidate = array_text
+            # 修复中文引号与单引号
+            candidate = candidate.replace('“', '"').replace('”', '"')
+            # 去除对象/数组中的尾随逗号
+            candidate = re.sub(r",\s*([\]}])", r"\1", candidate)
+            # 将单引号替换为双引号（仅在看起来像JSON时做）
+            if "'" in candidate and '"' not in candidate:
+                candidate = candidate.replace("'", '"')
             try:
                 parsed = json.loads(candidate)
                 if isinstance(parsed, list):
