@@ -114,7 +114,12 @@ def create_app():
     app.register_blueprint(text_recitation.bp)
     app.register_blueprint(reminder.bp)
     app.register_blueprint(text.bp)
-    app.register_blueprint(parent_voice.bp)
+    # 通过环境变量控制是否注册家长音色相关路由
+    import os as _os
+    if _os.environ.get('ENABLE_PARENT_VOICE', '0') == '1':
+        app.register_blueprint(parent_voice.bp)
+    else:
+        print('ParentVoice routes disabled (ENABLE_PARENT_VOICE=0)')
     
     return app
 

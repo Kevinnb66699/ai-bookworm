@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.text_recitation import TextRecitation
 from app.services.ocr_service import ocr_service
 from app.services.recitation_service import calculate_similarity, recitation_analysis_service
+from app.services.tts_service import tts_service
 from app.services.speech_service import speech_service
 from app import db
 import tempfile
@@ -17,11 +18,15 @@ import re
 from datetime import datetime
 import threading
 from urllib.parse import urlparse
-# 临时下线家长音色功能：不导入相关模型与TTS服务
+try:
+    from app.models import ParentVoice  # 软导入
+except Exception:
+    ParentVoice = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
 bp = Blueprint('text_recitation', __name__)
+ENABLE_PARENT_VOICE = os.environ.get('ENABLE_PARENT_VOICE', '0') == '1'
 
 # OSS配置（建议用环境变量管理）
 OSS_ACCESS_KEY_ID = os.environ.get('OSS_ACCESS_KEY_ID', '你的AccessKeyId')
@@ -416,14 +421,30 @@ def analyze_recitation(id):
         
         logger.info(f"开始智能分析背诵，课文ID: {id}")
         
-        # 临时停用家长音色：强制为 None
+        # 获取用户家长音色风格（暂时关闭，统一置空；可通过环境变量开启）
         user_voice_style = None
         reference_audio_url = None
+        if ENABLE_PARENT_VOICE:
+            try:
+                if ParentVoice is not None:
+                    pv_for_eval = ParentVoice.query.filter_by(user_id=user_id).first()
+                    if pv_for_eval:
+                        logger.info('检测到家长音色记录，准备将风格用于评价生成')
+                        user_voice_style = pv_for_eval.voice_style or {
+                            'tone_style': pv_for_eval.tone_style,
+                            'speaking_speed': pv_for_eval.speaking_speed,
+                            'vocabulary_style': pv_for_eval.vocabulary_style,
+                        }
+                        reference_audio_url = pv_for_eval.audio_sample_url
+                        logger.info(f'家长音色：has_style={bool(user_voice_style)}, has_ref_audio={bool(reference_audio_url)}')
+            except Exception:
+                user_voice_style = None
+                reference_audio_url = None
         
         # 取缓存的分段，确保与“查看分段”一致
         preset_segments = text.segments_cache if hasattr(text, 'segments_cache') else None
 
-        # 调用智能分析服务（传入预分段）
+        # 调用智能分析服务（传入预分段与家长风格）
         analysis_result = recitation_analysis_service.analyze_recitation(
             original_text=text.content,
             recited_text=recited_text,
@@ -431,9 +452,37 @@ def analyze_recitation(id):
             preset_segments=preset_segments
         )
 
-        # Phase 2：如果存在家长音色，则按家长风格生成TTS音频
+        # 如需启用家长音色TTS，请设置环境变量 ENABLE_PARENT_VOICE=1
         voice_style_used = None
-        # 已停用家长音色 TTS 生成
+        if ENABLE_PARENT_VOICE:
+            try:
+                if ParentVoice is not None:
+                    pv = ParentVoice.query.filter_by(user_id=user_id).first()
+                    effective_style = None
+                    if pv:
+                        effective_style = pv.voice_style or {
+                            'tone_style': pv.tone_style,
+                            'speaking_speed': pv.speaking_speed,
+                            'vocabulary_style': pv.vocabulary_style,
+                        }
+                    if pv and (effective_style or pv.audio_sample_url):
+                        voice_style_used = effective_style
+                        ref_url = _sign_oss_url_if_applicable(pv.audio_sample_url) if pv.audio_sample_url else None
+                        logger.info(f'准备进行家长音色TTS：use_style={bool(effective_style)} use_ref_audio={bool(ref_url or pv.audio_sample_url)}')
+                        audio_data_uri = tts_service.synthesize_to_data_uri(
+                            analysis_result.get('evaluation_text', ''),
+                            effective_style,
+                            reference_audio_url=ref_url or pv.audio_sample_url
+                        )
+                        if audio_data_uri:
+                            analysis_result['voice_audio'] = audio_data_uri
+                            logger.info('家长音色TTS成功返回音频')
+                        else:
+                            logger.warning('家长音色TTS未获得音频，已回退或返回文本')
+            except Exception as e:
+                logger.warning(f"生成家长音色TTS失败: {e}")
+        else:
+            logger.info('家长音色功能已禁用（ENABLE_PARENT_VOICE=0），仅返回文本评价')
         
         # 可以选择保存分析结果到数据库
         # 这里暂时只返回结果，稍后可以添加数据库保存逻辑
