@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 bp = Blueprint('parent_voice', __name__)
 
 # 本地上传目录（用于无OSS时的回退）
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]  # backend/
-_LOCAL_UPLOAD_DIR = _PROJECT_ROOT / 'uploads' / 'parent_voice'
-_LOCAL_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+# 在无状态/只读文件系统（如 Vercel）中，持久化目录不可写；仅允许使用 /tmp 做短暂缓存
+_TMP_PARENT_VOICE_DIR = Path('/tmp/parent_voice')
+_TMP_PARENT_VOICE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _ensure_parent_voice_model():
@@ -34,26 +34,71 @@ def _ensure_parent_voice_model():
 
 
 def _upload_to_object_storage(local_path: str) -> str:
-    """示例上传：此处直接返回本地文件的假URL或集成你现有的 OSS 上传逻辑。
-    如需使用阿里云OSS，可复用 text_recitation.py 中的 oss 上传函数。
+    """上传到对象存储。
+    优先使用 OSS；若未配置或失败，则回退到 Supabase Storage（使用服务端密钥）。
+    返回音频的公网 URL（公共读）或可长期访问的公开 URL。
     """
-    # 这里优先复用环境中的 OSS 配置（如果存在）
+    # 方案1：OSS
     try:
         from app.routes.text_recitation import upload_to_oss  # 复用已有的OSS上传
         return upload_to_oss(local_path)
     except Exception as e:
-        logger.warning(f"未配置OSS，改用本地存储: {e}")
-        # 保存到本地 uploads/parent_voice 目录，并返回可访问的URL
-        filename = f"{uuid.uuid4().hex}.wav"
-        dest_path = _LOCAL_UPLOAD_DIR / filename
-        try:
-            shutil.copyfile(local_path, dest_path)
-        except Exception as copy_err:
-            logger.error(f"本地保存失败: {copy_err}")
-            raise
-        # 构造可访问URL
-        base = request.host_url.rstrip('/')
-        return f"{base}/uploads/parent-voice/{filename}"
+        logger.warning(f"OSS 上传不可用，将尝试 Supabase Storage：{e}")
+
+    # 方案2：Supabase Storage（需 SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY）
+    supabase_url = os.environ.get('SUPABASE_URL')
+    supabase_service_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+    bucket = os.environ.get('SUPABASE_STORAGE_BUCKET', 'parent-voice')
+    if not supabase_url or not supabase_service_key:
+        raise RuntimeError('未配置 OSS，且缺少 SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY，无法上传音频样本。')
+
+    try:
+        # 确保 bucket 存在且为 public
+        headers = {
+            'Authorization': f'Bearer {supabase_service_key}',
+            'apikey': supabase_service_key,
+            'Content-Type': 'application/json'
+        }
+        # 查询 bucket 列表
+        r = requests.get(f'{supabase_url}/storage/v1/bucket', headers=headers, timeout=20)
+        r.raise_for_status()
+        buckets = r.json() if r.text else []
+        exists = any(b.get('name') == bucket for b in (buckets or []))
+        if not exists:
+            # 创建 public bucket
+            rb = requests.post(
+                f'{supabase_url}/storage/v1/bucket',
+                headers=headers,
+                json={'name': bucket, 'public': True},
+                timeout=20
+            )
+            rb.raise_for_status()
+
+        # 上传对象
+        object_path = f"audio/{uuid.uuid4().hex}.wav"
+        with open(local_path, 'rb') as f:
+            file_bytes = f.read()
+        up_headers = {
+            'Authorization': f'Bearer {supabase_service_key}',
+            'apikey': supabase_service_key,
+            'x-upsert': 'true',
+            'Content-Type': 'audio/wav'
+        }
+        up = requests.post(
+            f'{supabase_url}/storage/v1/object/{bucket}/{object_path}',
+            headers=up_headers,
+            data=file_bytes,
+            timeout=30
+        )
+        up.raise_for_status()
+
+        # 构造公共访问 URL（public bucket）
+        public_url = f'{supabase_url}/storage/v1/object/public/{bucket}/{object_path}'
+        logger.info(f'Supabase 上传成功：{public_url}')
+        return public_url
+    except Exception as e:
+        logger.error(f'Supabase Storage 上传失败：{e}')
+        raise RuntimeError('无法将音频上传到 Supabase Storage。')
 
 
 def _convert_to_wav(src_path: str) -> str:
@@ -100,7 +145,7 @@ def upload_parent_voice():
     if not any(audio_file.filename.lower().endswith(ext) for ext in allowed_ext):
         return jsonify({'error': '请上传 WAV 格式的音频（单声道/16kHz/16bit）'}), 400
 
-    temp_dir = tempfile.mkdtemp()
+    temp_dir = tempfile.mkdtemp(dir=str(_TMP_PARENT_VOICE_DIR))
     local_path = os.path.join(temp_dir, audio_file.filename)
     audio_file.save(local_path)
 
@@ -178,7 +223,7 @@ def analyze_parent_voice():
     # 支持直接上传音频进行分析（不持久化），也支持从已保存的URL下载
     if 'audio' in request.files and request.files['audio'].filename:
         audio_file = request.files['audio']
-        temp_dir = tempfile.mkdtemp()
+        temp_dir = tempfile.mkdtemp(dir=str(_TMP_PARENT_VOICE_DIR))
         local_path = os.path.join(temp_dir, audio_file.filename)
         audio_file.save(local_path)
         # 若不是 wav，可尝试转成 wav 再读取

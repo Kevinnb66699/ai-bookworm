@@ -17,6 +17,7 @@ import json
 import re
 from datetime import datetime
 import threading
+from urllib.parse import urlparse
 try:
     from app.models import ParentVoice  # 软导入
 except Exception:
@@ -56,6 +57,28 @@ def upload_to_oss(local_file_path):
     with open(local_file_path, 'rb') as fileobj:
         bucket.put_object(oss_file_name, fileobj)
     return f"https://{OSS_BUCKET_NAME}.oss-cn-shanghai.aliyuncs.com/{oss_file_name}"
+
+
+def _sign_oss_url_if_applicable(public_url: str, expires: int = 300) -> str:
+    """如果是当前配置的 OSS 对象 URL，则生成临时签名 URL；否则原样返回。
+    这样 DashScope 即使在私有桶也能拉取参考音频。
+    """
+    try:
+        if not public_url:
+            return public_url
+        parsed = urlparse(public_url)
+        hostname = parsed.hostname or ''
+        # 仅处理与当前配置的 bucket/region 匹配的 OSS URL
+        expected_host = f"{OSS_BUCKET_NAME}.oss-cn-shanghai.aliyuncs.com"
+        if hostname != expected_host:
+            return public_url
+        key = parsed.path.lstrip('/')
+        auth = oss2.Auth(OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET)
+        bucket = oss2.Bucket(auth, OSS_ENDPOINT, OSS_BUCKET_NAME)
+        signed = bucket.sign_url('GET', key, expires)
+        return signed or public_url
+    except Exception:
+        return public_url
 
 
 def _clean_text_content(raw: str) -> str:
@@ -442,11 +465,13 @@ def analyze_recitation(id):
                     }
                 if pv and (effective_style or pv.audio_sample_url):
                     voice_style_used = effective_style
-                    logger.info(f'准备进行家长音色TTS：use_style={bool(effective_style)} use_ref_audio={bool(pv.audio_sample_url)}')
+                    # 若参考音频在 OSS，生成临时签名 URL，便于 DashScope 拉取
+                    ref_url = _sign_oss_url_if_applicable(pv.audio_sample_url) if pv.audio_sample_url else None
+                    logger.info(f'准备进行家长音色TTS：use_style={bool(effective_style)} use_ref_audio={bool(ref_url or pv.audio_sample_url)}')
                     audio_data_uri = tts_service.synthesize_to_data_uri(
                         analysis_result.get('evaluation_text', ''),
                         effective_style,
-                        reference_audio_url=pv.audio_sample_url
+                        reference_audio_url=ref_url or pv.audio_sample_url
                     )
                     if audio_data_uri:
                         analysis_result['voice_audio'] = audio_data_uri
