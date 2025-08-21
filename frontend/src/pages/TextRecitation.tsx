@@ -116,6 +116,19 @@ const TextRecitation: React.FC = () => {
       ));
       message.success('更新成功');
       handleEditCancel();
+
+      // 保存后立即提示并触发智能分段
+      const hideSegLoading = message.loading('正在进行智能分段，请稍候...', 0);
+      try {
+        const segResp = await textRecitationService.getTextSegments(updatedText.id);
+        setTextSegments(segResp.segments);
+        setSegmentsVisible(true);
+      } catch (segErr) {
+        console.error('编辑后获取分段失败:', segErr);
+        message.error('获取分段失败，请稍后在列表中点击“查看分段”重试');
+      } finally {
+        hideSegLoading();
+      }
     } catch (error) {
       message.error('更新失败，请重试');
     }
