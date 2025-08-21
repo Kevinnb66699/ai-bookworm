@@ -9,7 +9,7 @@ console.log('ApiClient - 直接连接后端，不使用代理');
 // 创建API客户端实例
 const apiClient = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },

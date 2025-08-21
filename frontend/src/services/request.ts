@@ -4,7 +4,7 @@ import { getApiUrl } from '../config';
 
 const request = axios.create({
   baseURL: `${getApiUrl()}/api`,
-  timeout: 10000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },

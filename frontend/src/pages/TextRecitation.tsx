@@ -284,14 +284,7 @@ const TextRecitation: React.FC = () => {
       // 显示处理中的提示
       const hideLoading = message.loading('正在处理您的背诵，请稍候...', 0);
       
-      // 10秒超时定时器
-      if (reciteTimeoutRef.current) clearTimeout(reciteTimeoutRef.current);
-      reciteTimeoutRef.current = setTimeout(() => {
-        hideLoading();
-        setReciting(false);
-        setCurrentRecitationId(null);
-        message.error('提交背诵超时');
-      }, 10000);
+      // 取消固定10秒超时限制，交由后端/网络超时控制
       
       const result = await textRecitationService.submitRecitation(targetId, audioBlob);
       
